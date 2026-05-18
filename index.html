@@ -3,24 +3,153 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hello World</title>
+  <title>3D World</title>
   <style>
-    body {
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; }
+
+    /* 准星 */
+    #crosshair {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 100;
+    }
+    #crosshair::before,
+    #crosshair::after {
+      content: '';
+      position: absolute;
+      background: white;
+      box-shadow: 0 0 2px rgba(0,0,0,0.8);
+    }
+    #crosshair::before {
+      width: 20px;
+      height: 2px;
+      top: -1px;
+      left: -10px;
+    }
+    #crosshair::after {
+      width: 2px;
+      height: 20px;
+      top: -10px;
+      left: -1px;
+    }
+
+    /* 进入提示遮罩 */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f0f4f8;
+      gap: 12px;
+      color: white;
       font-family: Arial, sans-serif;
+      z-index: 200;
+      cursor: pointer;
+      user-select: none;
     }
-    h1 {
-      font-size: 3rem;
-      color: #2d3748;
-    }
+    #overlay h2 { font-size: 1.8rem; letter-spacing: 2px; }
+    #overlay p  { font-size: 0.95rem; color: #ccc; }
   </style>
 </head>
 <body>
-  <h1>Hello, World!</h1>
+
+  <div id="overlay">
+    <h2>点击进入</h2>
+    <p>WASD 移动 &nbsp;|&nbsp; Shift 加速 &nbsp;|&nbsp; 鼠标转动视角 &nbsp;|&nbsp; ESC 退出</p>
+  </div>
+
+  <div id="crosshair"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+    // 场景
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xdce3e8);
+    scene.fog = new THREE.FogExp2(0xdce3e8, 0.008);
+
+    // 相机（眼睛高度 1.7m）
+    const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 2000);
+    camera.position.set(0, 1.7, 0);
+
+    // 渲染器
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    // 网格地板（无限延伸感）
+    const grid = new THREE.GridHelper(2000, 200, 0x888888, 0x555555);
+    scene.add(grid);
+
+    // 环境光
+    scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+
+    // 指针锁定控制
+    const controls = new PointerLockControls(camera, document.body);
+    scene.add(controls.getObject());
+
+    const overlay = document.getElementById('overlay');
+
+    overlay.addEventListener('click', () => controls.lock());
+    controls.addEventListener('lock',   () => overlay.style.display = 'none');
+    controls.addEventListener('unlock', () => overlay.style.display = 'flex');
+
+    // 按键状态
+    const keys = new Set();
+    document.addEventListener('keydown', e => keys.add(e.code));
+    document.addEventListener('keyup',   e => keys.delete(e.code));
+
+    // 移动速度
+    const BASE_SPEED  = 6;
+    const SHIFT_SPEED = 18;
+
+    // 动画循环
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (controls.isLocked) {
+        const dt    = clock.getDelta();
+        const speed = (keys.has('ShiftLeft') || keys.has('ShiftRight')) ? SHIFT_SPEED : BASE_SPEED;
+        const dist  = speed * dt;
+
+        if (keys.has('KeyW')) controls.moveForward(dist);
+        if (keys.has('KeyS')) controls.moveForward(-dist);
+        if (keys.has('KeyA')) controls.moveRight(-dist);
+        if (keys.has('KeyD')) controls.moveRight(dist);
+      } else {
+        clock.getDelta(); // 防止 delta 积累
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // 响应窗口大小变化
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+  </script>
 </body>
 </html>
