@@ -8,6 +8,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { overflow: hidden; }
 
+    /* ── 准星 ── */
     #crosshair {
       position: fixed;
       top: 50%; left: 50%;
@@ -24,51 +25,122 @@
     #crosshair::before { width: 20px; height: 2px; top: -1px; left: -10px; }
     #crosshair::after  { width: 2px; height: 20px; top: -10px; left: -1px; }
 
+    /* ── 进入遮罩 ── */
     #overlay {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: rgba(0,0,0,0.62);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 22px;
-      color: white;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      gap: 22px; color: white;
       font-family: Arial, sans-serif;
-      z-index: 200;
-      user-select: none;
+      z-index: 200; user-select: none;
     }
     #overlay h2 { font-size: 1.9rem; letter-spacing: 3px; }
-
+    #overlay p  { font-size: 0.85rem; color: #aaa; }
     .setting-row {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      font-size: 0.92rem;
+      display: flex; align-items: center; gap: 14px; font-size: 0.92rem;
     }
     .setting-row label { width: 90px; text-align: right; color: #ccc; }
     .setting-row input[type="range"] { width: 180px; accent-color: #7af; cursor: pointer; }
     .setting-row span { width: 36px; font-weight: bold; color: #7af; }
-
     #enter-btn {
-      margin-top: 6px;
-      padding: 10px 44px;
+      margin-top: 6px; padding: 10px 44px;
       font-size: 1rem;
-      background: rgba(255,255,255,0.13);
-      color: white;
-      border: 1px solid rgba(255,255,255,0.35);
-      border-radius: 6px;
-      cursor: pointer;
-      letter-spacing: 2px;
-      transition: background 0.2s;
+      background: rgba(255,255,255,0.13); color: white;
+      border: 1px solid rgba(255,255,255,0.35); border-radius: 6px;
+      cursor: pointer; letter-spacing: 2px; transition: background 0.2s;
     }
     #enter-btn:hover { background: rgba(255,255,255,0.24); }
 
-    #overlay p { font-size: 0.85rem; color: #aaa; }
+    /* ── 交互提示（右下角）── */
+    #interact-hint {
+      position: fixed; bottom: 50px; right: 40px;
+      color: white; font-family: Arial, sans-serif; font-size: 0.88rem;
+      background: rgba(0,0,0,0.6);
+      padding: 8px 18px; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      display: none; pointer-events: none; z-index: 150;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── 卡牌 2D 界面 ── */
+    #card-ui {
+      position: fixed; inset: 0;
+      background: #000;
+      display: none; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      padding-top: 70px;
+      z-index: 300; overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    /* 彩虹渐变背景层 */
+    .rainbow-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg,
+        rgba(255,0,0,0.18), rgba(255,120,0,0.18),
+        rgba(255,230,0,0.18), rgba(0,220,0,0.18),
+        rgba(0,100,255,0.18), rgba(160,0,230,0.18),
+        rgba(255,0,0,0.18)
+      );
+      background-size: 400% 400%;
+      animation: rainbow-shift 8s ease infinite;
+      pointer-events: none;
+    }
+    /* 斜线纹路 */
+    .rainbow-lines {
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        45deg, transparent, transparent 38px,
+        rgba(255,255,255,0.04) 38px, rgba(255,255,255,0.04) 39px
+      );
+      animation: lines-move 6s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes rainbow-shift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes lines-move {
+      0%   { background-position: 0 0; }
+      100% { background-position: 78px 78px; }
+    }
+
+    /* 按钮行 */
+    .ui-buttons {
+      display: flex; gap: 24px;
+      position: relative; z-index: 1;
+    }
+    .ui-btn {
+      position: relative;
+      padding: 12px 36px;
+      background: rgba(0,0,0,0.88); color: white;
+      border: none; border-radius: 8px;
+      font-size: 1rem; cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.2s;
+    }
+    .ui-btn:hover { background: rgba(40,40,40,0.95); }
+    /* 渐变边框 */
+    .ui-btn::before {
+      content: '';
+      position: absolute; inset: -2px;
+      border-radius: 10px;
+      background: linear-gradient(135deg,
+        #ff0000, #ff7700, #ffee00,
+        #00ee00, #0077ff, #8b00ff, #ff0000
+      );
+      background-size: 300% 300%;
+      animation: rainbow-shift 3s linear infinite;
+      z-index: -1;
+    }
+    #btn-exit { padding: 12px 22px; font-size: 1.1rem; }
   </style>
 </head>
 <body>
 
+  <!-- 进入遮罩 -->
   <div id="overlay">
     <h2>3D World</h2>
     <div class="setting-row">
@@ -80,7 +152,22 @@
     <p>WASD 移动 &nbsp;·&nbsp; Shift 加速 &nbsp;·&nbsp; 鼠标转动视角 &nbsp;·&nbsp; ESC 退出</p>
   </div>
 
+  <!-- 准星 -->
   <div id="crosshair"></div>
+
+  <!-- 交互提示 -->
+  <div id="interact-hint">⬜ 按 [空格] 交互</div>
+
+  <!-- 卡牌 2D 界面 -->
+  <div id="card-ui">
+    <div class="rainbow-bg"></div>
+    <div class="rainbow-lines"></div>
+    <div class="ui-buttons">
+      <button class="ui-btn" id="btn-exit">✕</button>
+      <button class="ui-btn" id="btn-draw">抽卡</button>
+      <button class="ui-btn" id="btn-container">容器</button>
+    </div>
+  </div>
 
   <script type="importmap">
   {
@@ -95,10 +182,10 @@
     import * as THREE from 'three';
     import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-    // ── 场景 ────────────────────────────────────────────────
+    // ── 场景基础 ──────────────────────────────────────────
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xdce3e8);
-    scene.fog = new THREE.FogExp2(0xdce3e8, 0.008);
+    scene.fog = new THREE.FogExp2(0xdce3e8, 0.006);
 
     const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 2000);
     camera.position.set(0, 1.7, 0);
@@ -108,194 +195,301 @@
     renderer.setPixelRatio(devicePixelRatio);
     document.body.appendChild(renderer.domElement);
 
+    // 地板网格
     scene.add(new THREE.GridHelper(2000, 200, 0x888888, 0x555555));
-    scene.add(new THREE.AmbientLight(0xffffff, 1.0));
 
-    // ── 控制 ────────────────────────────────────────────────
+    // 灯光
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    const sun = new THREE.DirectionalLight(0xfff8f0, 0.6);
+    sun.position.set(5, 12, 8);
+    scene.add(sun);
+
+    // ── 大理石纹理生成 ────────────────────────────────────
+    function makeMarbleTex(repeatX = 6, repeatY = 1.5) {
+      const S = 512;
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = S;
+      const c = cv.getContext('2d');
+
+      c.fillStyle = '#f0ece4';
+      c.fillRect(0, 0, S, S);
+
+      const veins = [
+        'rgba(185,175,160,0.45)', 'rgba(155,145,130,0.30)',
+        'rgba(210,205,195,0.50)', 'rgba(125,115,105,0.22)',
+        'rgba(200,192,180,0.38)',
+      ];
+      for (let i = 0; i < 38; i++) {
+        c.beginPath();
+        c.strokeStyle = veins[i % veins.length];
+        c.lineWidth = Math.random() * 2.2 + 0.3;
+        c.moveTo(Math.random() * S, Math.random() * S);
+        for (let j = 0; j < 4; j++) {
+          c.bezierCurveTo(
+            Math.random()*S, Math.random()*S,
+            Math.random()*S, Math.random()*S,
+            Math.random()*S, Math.random()*S
+          );
+        }
+        c.stroke();
+      }
+
+      // 细颗粒噪声
+      const img = c.getImageData(0, 0, S, S);
+      for (let i = 0; i < img.data.length; i += 4) {
+        const n = (Math.random() - 0.5) * 7;
+        img.data[i]   = Math.min(255, Math.max(0, img.data[i]   + n));
+        img.data[i+1] = Math.min(255, Math.max(0, img.data[i+1] + n));
+        img.data[i+2] = Math.min(255, Math.max(0, img.data[i+2] + n));
+      }
+      c.putImageData(img, 0, 0);
+
+      const tex = new THREE.CanvasTexture(cv);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(repeatX, repeatY);
+      return tex;
+    }
+
+    function wallMat(rx, ry) {
+      return new THREE.MeshLambertMaterial({ map: makeMarbleTex(rx, ry) });
+    }
+
+    // ── 围墙（内侧 20×20，高 3，厚 1）────────────────────
+    // 北墙（玩家正前方，z = -10.5），宽 22 含角落
+    const northWall = new THREE.Mesh(new THREE.BoxGeometry(22, 3, 1), wallMat(7, 1.5));
+    northWall.position.set(0, 1.5, -10.5);
+    scene.add(northWall);
+
+    // 南墙
+    const southWall = new THREE.Mesh(new THREE.BoxGeometry(22, 3, 1), wallMat(7, 1.5));
+    southWall.position.set(0, 1.5, 10.5);
+    scene.add(southWall);
+
+    // 东墙（长 20）
+    const eastWall = new THREE.Mesh(new THREE.BoxGeometry(1, 3, 20), wallMat(6, 1.5));
+    eastWall.position.set(10.5, 1.5, 0);
+    scene.add(eastWall);
+
+    // 西墙
+    const westWall = new THREE.Mesh(new THREE.BoxGeometry(1, 3, 20), wallMat(6, 1.5));
+    westWall.position.set(-10.5, 1.5, 0);
+    scene.add(westWall);
+
+    // 碰撞边界（内壁 ±10，减去玩家半径 0.3）
+    const BOUND = 9.7;
+
+    // ── 卡牌纹理 ──────────────────────────────────────────
+    function makeCardTex() {
+      const W = 128, H = 192;
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const c = cv.getContext('2d');
+
+      // 白底圆角
+      c.fillStyle = 'white';
+      c.beginPath();
+      c.roundRect(0, 0, W, H, 10);
+      c.fill();
+
+      // 外框
+      c.strokeStyle = '#333';
+      c.lineWidth = 4;
+      c.beginPath(); c.roundRect(3, 3, W-6, H-6, 8); c.stroke();
+
+      // 内框
+      c.strokeStyle = '#bbb';
+      c.lineWidth = 1.5;
+      c.beginPath(); c.roundRect(10, 10, W-20, H-20, 5); c.stroke();
+
+      // "?" 文字
+      c.fillStyle = '#222';
+      c.font = 'bold 82px serif';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('?', W/2, H/2);
+
+      return new THREE.CanvasTexture(cv);
+    }
+
+    // ── 卡牌网格（贴在北墙内面）────────────────────────
+    // 北墙内面 z = -10，卡片向玩家方向偏移一点避免 z-fighting
+    const cardMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.5, 0.75),
+      new THREE.MeshBasicMaterial({ map: makeCardTex() })
+    );
+    cardMesh.position.set(0, 1.7, -9.97); // 正前方，视线高度
+    scene.add(cardMesh);
+
+    // ── 控制器 ────────────────────────────────────────────
     const controls = new PointerLockControls(camera, document.body);
     scene.add(controls.getObject());
 
-    const overlay    = document.getElementById('overlay');
-    const enterBtn   = document.getElementById('enter-btn');
-    const sensSlider = document.getElementById('sensitivity');
-    const sensLabel  = document.getElementById('sens-val');
+    const overlay      = document.getElementById('overlay');
+    const enterBtn     = document.getElementById('enter-btn');
+    const sensSlider   = document.getElementById('sensitivity');
+    const sensLabel    = document.getElementById('sens-val');
+    const interactHint = document.getElementById('interact-hint');
+    const cardUI       = document.getElementById('card-ui');
 
     controls.pointerSpeed = 1.0;
-
     sensSlider.addEventListener('input', () => {
       const v = parseFloat(sensSlider.value);
       sensLabel.textContent = v.toFixed(1);
       controls.pointerSpeed = v;
     });
 
-    enterBtn.addEventListener('click', () => controls.lock());
-    controls.addEventListener('lock',   () => overlay.style.display = 'none');
-    controls.addEventListener('unlock', () => overlay.style.display = 'flex');
+    let cardUIOpen = false;
 
-    // ── 按键 ────────────────────────────────────────────────
+    enterBtn.addEventListener('click', () => controls.lock());
+
+    controls.addEventListener('lock', () => {
+      overlay.style.display = 'none';
+    });
+    controls.addEventListener('unlock', () => {
+      // 只有当卡牌界面未打开时才显示主遮罩
+      if (!cardUIOpen) overlay.style.display = 'flex';
+    });
+
+    // ── 卡牌界面开关 ─────────────────────────────────────
+    function openCardUI() {
+      cardUIOpen = true;
+      controls.unlock();
+      cardUI.style.display = 'flex';
+      interactHint.style.display = 'none';
+    }
+    function closeCardUI() {
+      cardUI.style.display = 'none';
+      cardUIOpen = false;
+      controls.lock();
+    }
+
+    document.getElementById('btn-exit').addEventListener('click', closeCardUI);
+    document.getElementById('btn-draw').addEventListener('click', () => {/* 待开发 */});
+    document.getElementById('btn-container').addEventListener('click', () => {/* 待开发 */});
+
+    // ── 按键 ─────────────────────────────────────────────
     const keys = new Set();
-    document.addEventListener('keydown', e => keys.add(e.code));
-    document.addEventListener('keyup',   e => keys.delete(e.code));
+    document.addEventListener('keydown', e => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (controls.isLocked && aimingAtCard) openCardUI();
+      }
+      keys.add(e.code);
+    });
+    document.addEventListener('keyup', e => keys.delete(e.code));
 
     const isMoving = () => keys.has('KeyW') || keys.has('KeyS') || keys.has('KeyA') || keys.has('KeyD');
     const isShift  = () => keys.has('ShiftLeft') || keys.has('ShiftRight');
 
-    // ── 音效 ────────────────────────────────────────────────
+    // ── 准星射线检测 ──────────────────────────────────────
+    const raycaster = new THREE.Raycaster();
+    let aimingAtCard = false;
+
+    function checkCardAim() {
+      raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+      const hits = raycaster.intersectObject(cardMesh);
+      if (hits.length > 0 && hits[0].distance < 5) {
+        if (!aimingAtCard) interactHint.style.display = 'block';
+        aimingAtCard = true;
+      } else {
+        if (aimingAtCard) interactHint.style.display = 'none';
+        aimingAtCard = false;
+      }
+    }
+
+    // ── 脚步音效 ──────────────────────────────────────────
     let audioCtx = null;
-    function ensureAudio() {
+    const getACtx = () => {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       return audioCtx;
-    }
-
+    };
     function playFootstep() {
-      const ctx = ensureAudio();
-      const sr  = ctx.sampleRate;
-      const len = Math.floor(sr * 0.055);
-      const buf = ctx.createBuffer(1, len, sr);
+      const ctx = getACtx();
+      const len = Math.floor(ctx.sampleRate * 0.055);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
       const d   = buf.getChannelData(0);
-
-      for (let i = 0; i < len; i++) {
-        d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (len * 0.12));
-      }
-
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-
-      const hp = ctx.createBiquadFilter();
-      hp.type = 'highpass';
-      hp.frequency.value = 900;
-
-      const peak = ctx.createBiquadFilter();
-      peak.type = 'peaking';
-      peak.frequency.value = 2800;
-      peak.gain.value = 8;
-
-      const gain = ctx.createGain();
-      gain.gain.value = 0.45;
-
-      src.connect(hp);
-      hp.connect(peak);
-      peak.connect(gain);
-      gain.connect(ctx.destination);
+      for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(len*0.12));
+      const src  = ctx.createBufferSource(); src.buffer = buf;
+      const hp   = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
+      const peak = ctx.createBiquadFilter(); peak.type = 'peaking'; peak.frequency.value = 2800; peak.gain.value = 8;
+      const gain = ctx.createGain(); gain.gain.value = 0.45;
+      src.connect(hp); hp.connect(peak); peak.connect(gain); gain.connect(ctx.destination);
       src.start();
     }
-
     let stepTimer = 0;
-
     function updateFootstep(dt) {
       if (!isMoving()) { stepTimer = 0; return; }
-      const interval = isShift() ? 1 / 3.0 : 1 / 1.5;
+      const interval = isShift() ? 1/3 : 1/1.5;
       stepTimer += dt;
-      if (stepTimer >= interval) {
-        stepTimer -= interval;
-        playFootstep();
-      }
+      if (stepTimer >= interval) { stepTimer -= interval; playFootstep(); }
     }
 
-    // ── 粒子 ────────────────────────────────────────────────
-    const MAX_P = 800;
-    const LIFETIME = 2.0;
-
-    const posArr   = new Float32Array(MAX_P * 3);
-    const alphaArr = new Float32Array(MAX_P);
-
+    // ── 粒子系统 ──────────────────────────────────────────
+    const MAX_P = 800, LIFETIME = 2.0;
+    const posArr = new Float32Array(MAX_P * 3);
+    const alpArr = new Float32Array(MAX_P);
     const pGeo = new THREE.BufferGeometry();
     pGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
-    pGeo.setAttribute('alpha',    new THREE.BufferAttribute(alphaArr, 1));
-
+    pGeo.setAttribute('alpha',    new THREE.BufferAttribute(alpArr, 1));
     const pMat = new THREE.ShaderMaterial({
       vertexShader: `
-        attribute float alpha;
-        varying float vAlpha;
+        attribute float alpha; varying float vA;
         void main() {
-          vAlpha = alpha;
+          vA = alpha;
           gl_PointSize = 4.0;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
+        }`,
       fragmentShader: `
-        varying float vAlpha;
+        varying float vA;
         void main() {
-          vec2 c = gl_PointCoord - 0.5;
-          if (length(c) > 0.5) discard;
-          gl_FragColor = vec4(1.0, 1.0, 1.0, vAlpha);
-        }
-      `,
-      transparent: true,
-      depthWrite: false,
+          if (length(gl_PointCoord - 0.5) > 0.5) discard;
+          gl_FragColor = vec4(1.0, 1.0, 1.0, vA);
+        }`,
+      transparent: true, depthWrite: false,
     });
-
     scene.add(new THREE.Points(pGeo, pMat));
 
-    const pool = Array.from({ length: MAX_P }, () => ({
-      active: false, x: 0, y: 0, z: 0,
-      vx: 0, vy: 0, vz: 0, life: 0,
-    }));
+    const pool = Array.from({ length: MAX_P }, () =>
+      ({ active: false, x:0, y:0, z:0, vx:0, vy:0, vz:0, life:0 }));
 
     function spawnBatch() {
-      const count = Math.floor(Math.random() * 21) + 10;
+      const count = Math.floor(Math.random()*21) + 10;
       let n = 0;
       for (let i = 0; i < MAX_P && n < count; i++) {
         if (pool[i].active) continue;
-        const p = pool[i];
-        const angle  = Math.random() * Math.PI * 2;
-        const radius = Math.random() * 1.5;
-        p.active = true;
-        p.x = camera.position.x + Math.cos(angle) * radius;
-        p.y = 0.05 + Math.random() * 0.1;
-        p.z = camera.position.z + Math.sin(angle) * radius;
-        p.vx = (Math.random() - 0.5) * 0.6;
-        p.vy = Math.random() * 1.2 + 0.4;
-        p.vz = (Math.random() - 0.5) * 0.6;
-        p.life = 0;
+        const p = pool[i], a = Math.random()*Math.PI*2, r = Math.random()*1.5;
+        p.active=true; p.life=0;
+        p.x = camera.position.x + Math.cos(a)*r;
+        p.y = 0.05 + Math.random()*0.1;
+        p.z = camera.position.z + Math.sin(a)*r;
+        p.vx = (Math.random()-0.5)*0.6;
+        p.vy = Math.random()*1.2 + 0.4;
+        p.vz = (Math.random()-0.5)*0.6;
         n++;
       }
     }
-
     let spawnTimer = 0;
-    const SPAWN_INTERVAL = 0.05;
-
     function updateParticles(dt, locked) {
       if (locked && isMoving()) {
         spawnTimer += dt;
-        if (spawnTimer >= SPAWN_INTERVAL) {
-          spawnTimer -= SPAWN_INTERVAL;
-          spawnBatch();
-        }
-      } else {
-        spawnTimer = 0;
-      }
+        if (spawnTimer >= 0.05) { spawnTimer -= 0.05; spawnBatch(); }
+      } else spawnTimer = 0;
 
       for (let i = 0; i < MAX_P; i++) {
         const p = pool[i];
-        if (!p.active) {
-          posArr[i * 3 + 1] = -9999;
-          alphaArr[i] = 0;
-          continue;
-        }
+        if (!p.active) { posArr[i*3+1] = -9999; alpArr[i] = 0; continue; }
         p.life += dt;
-        if (p.life >= LIFETIME) {
-          p.active = false;
-          posArr[i * 3 + 1] = -9999;
-          alphaArr[i] = 0;
-          continue;
-        }
-        p.vy  = Math.max(0, p.vy - 0.5 * dt);
-        p.x  += p.vx * dt;
-        p.y  += p.vy * dt;
-        p.z  += p.vz * dt;
-
-        posArr[i * 3]     = p.x;
-        posArr[i * 3 + 1] = p.y;
-        posArr[i * 3 + 2] = p.z;
-        alphaArr[i] = 1.0 - (p.life / LIFETIME);
+        if (p.life >= LIFETIME) { p.active=false; posArr[i*3+1]=-9999; alpArr[i]=0; continue; }
+        p.vy = Math.max(0, p.vy - 0.5*dt);
+        p.x += p.vx*dt; p.y += p.vy*dt; p.z += p.vz*dt;
+        posArr[i*3]=p.x; posArr[i*3+1]=p.y; posArr[i*3+2]=p.z;
+        alpArr[i] = 1.0 - p.life/LIFETIME;
       }
-
       pGeo.attributes.position.needsUpdate = true;
       pGeo.attributes.alpha.needsUpdate    = true;
     }
 
-    // ── 主循环 ──────────────────────────────────────────────
+    // ── 主循环 ────────────────────────────────────────────
     const clock = new THREE.Clock();
 
     function animate() {
@@ -304,13 +498,21 @@
       const locked = controls.isLocked;
 
       if (locked) {
-        const speed = isShift() ? 18 : 6;
-        const dist  = speed * dt;
+        const dist = (isShift() ? 18 : 6) * dt;
         if (keys.has('KeyW')) controls.moveForward(dist);
         if (keys.has('KeyS')) controls.moveForward(-dist);
         if (keys.has('KeyA')) controls.moveRight(-dist);
         if (keys.has('KeyD')) controls.moveRight(dist);
+
+        // 碰撞：限制在围墙内
+        camera.position.x = Math.max(-BOUND, Math.min(BOUND, camera.position.x));
+        camera.position.z = Math.max(-BOUND, Math.min(BOUND, camera.position.z));
+
         updateFootstep(dt);
+        checkCardAim();
+      } else {
+        interactHint.style.display = 'none';
+        aimingAtCard = false;
       }
 
       updateParticles(dt, locked);
