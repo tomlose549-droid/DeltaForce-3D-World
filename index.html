@@ -241,46 +241,143 @@
     // 碰撞边界（内壁 ±10，减去玩家半径 0.3）
     const BOUND = 9.7;
 
-    // ── 卡牌纹理 ──────────────────────────────────────────
-    function makeCardTex() {
-      const W = 128, H = 192;
+    // ── 天空立方体（12 个半透明黑色玻璃方块）────────────
+    const skyCubes = [];
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x050814,
+      transparent: true,
+      opacity: 0.42,
+      roughness: 0.04,
+      metalness: 0.25,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const edgeMat = new THREE.LineBasicMaterial({
+      color: 0x4455cc,
+      transparent: true,
+      opacity: 0.55,
+    });
+
+    for (let i = 0; i < 12; i++) {
+      const size = 20 + Math.random() * 8;           // 20~28 格
+      const geo  = new THREE.BoxGeometry(size, size, size);
+      const cube = new THREE.Mesh(geo, glassMat);
+
+      cube.position.set(
+        (Math.random() - 0.5) * 160,
+        52 + Math.random() * 12,                     // 高度 52~64
+        (Math.random() - 0.5) * 160
+      );
+      cube.rotation.set(
+        Math.random() * Math.PI,
+        Math.random() * Math.PI,
+        Math.random() * Math.PI
+      );
+
+      // 边框线条
+      const edges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(geo), edgeMat
+      );
+      cube.add(edges);
+
+      cube.userData = {
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: (Math.random() - 0.5) * 0.15,
+        vz: (Math.random() - 0.5) * 0.8,
+        rx: (Math.random() - 0.5) * 0.12,
+        ry: (Math.random() - 0.5) * 0.18,
+        rz: (Math.random() - 0.5) * 0.08,
+        baseY: 52 + Math.random() * 12,
+      };
+
+      scene.add(cube);
+      skyCubes.push(cube);
+    }
+
+    function updateSkyCubes(dt) {
+      for (const cube of skyCubes) {
+        const u = cube.userData;
+        cube.position.x += u.vx * dt;
+        cube.position.y += u.vy * dt;
+        cube.position.z += u.vz * dt;
+        cube.rotation.x += u.rx * dt;
+        cube.rotation.y += u.ry * dt;
+        cube.rotation.z += u.rz * dt;
+        // 漂移边界反弹
+        if (Math.abs(cube.position.x) > 120) u.vx *= -1;
+        if (Math.abs(cube.position.z) > 120) u.vz *= -1;
+        if (Math.abs(cube.position.y - u.baseY) > 8) u.vy *= -1;
+      }
+    }
+
+    // ── 卡牌强度图（黑底 + 霓虹辉光遮罩）────────────────
+    function makeCardIntensityMap() {
+      const W = 256, H = 384;
       const cv = document.createElement('canvas');
       cv.width = W; cv.height = H;
       const c = cv.getContext('2d');
 
-      // 白底圆角
+      c.fillStyle = 'black';
+      c.fillRect(0, 0, W, H);
+
+      // 外框辉光层（模糊）
+      c.filter = 'blur(10px)';
+      c.strokeStyle = 'rgba(255,255,255,0.7)';
+      c.lineWidth = 28;
+      c.beginPath(); c.roundRect(14, 14, W-28, H-28, 20); c.stroke();
+
+      // "?" 辉光层（模糊）
+      c.filter = 'blur(12px)';
+      c.fillStyle = 'rgba(255,255,255,0.55)';
+      c.font = 'bold 170px serif';
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('?', W/2, H/2 + 14);
+
+      // 外框清晰层
+      c.filter = 'none';
+      c.strokeStyle = 'white';
+      c.lineWidth = 9;
+      c.beginPath(); c.roundRect(14, 14, W-28, H-28, 20); c.stroke();
+
+      // "?" 清晰层
       c.fillStyle = 'white';
-      c.beginPath();
-      c.roundRect(0, 0, W, H, 10);
-      c.fill();
-
-      // 外框
-      c.strokeStyle = '#333';
-      c.lineWidth = 4;
-      c.beginPath(); c.roundRect(3, 3, W-6, H-6, 8); c.stroke();
-
-      // 内框
-      c.strokeStyle = '#bbb';
-      c.lineWidth = 1.5;
-      c.beginPath(); c.roundRect(10, 10, W-20, H-20, 5); c.stroke();
-
-      // "?" 文字
-      c.fillStyle = '#222';
-      c.font = 'bold 82px serif';
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.fillText('?', W/2, H/2);
+      c.font = 'bold 170px serif';
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('?', W/2, H/2 + 14);
 
       return new THREE.CanvasTexture(cv);
     }
 
-    // ── 卡牌网格（贴在北墙内面）────────────────────────
-    // 北墙内面 z = -10，卡片向玩家方向偏移一点避免 z-fighting
-    const cardMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.5, 0.75),
-      new THREE.MeshBasicMaterial({ map: makeCardTex() })
-    );
-    cardMesh.position.set(0, 1.7, -9.97); // 正前方，视线高度
+    // ── 卡牌网格（霓虹彩虹 Shader）────────────────────────
+    const cardMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime:  { value: 0.0 },
+        uMask:  { value: makeCardIntensityMap() },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        uniform sampler2D uMask;
+        varying vec2 vUv;
+        vec3 rainbow(float t) {
+          return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.333, 0.667)));
+        }
+        void main() {
+          float intensity = texture2D(uMask, vUv).r;
+          vec3 color = rainbow(uTime * 0.35) * intensity;
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `,
+    });
+
+    const cardMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.75), cardMat);
+    cardMesh.position.set(0, 1.7, -9.97);
     scene.add(cardMesh);
 
     // ── 控制器 ────────────────────────────────────────────
@@ -360,31 +457,68 @@
       }
     }
 
-    // ── 脚步音效 ──────────────────────────────────────────
+    // ── 脚步音效（室内硬地板 + 左右脚交替）────────────────
     let audioCtx = null;
     const getACtx = () => {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       return audioCtx;
     };
-    function playFootstep() {
+
+    function playFootstep(isLeft) {
       const ctx = getACtx();
-      const len = Math.floor(ctx.sampleRate * 0.055);
-      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-      const d   = buf.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(len*0.12));
-      const src  = ctx.createBufferSource(); src.buffer = buf;
-      const hp   = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
-      const peak = ctx.createBiquadFilter(); peak.type = 'peaking'; peak.frequency.value = 2800; peak.gain.value = 8;
-      const gain = ctx.createGain(); gain.gain.value = 0.45;
-      src.connect(hp); hp.connect(peak); peak.connect(gain); gain.connect(ctx.destination);
+      const sr  = ctx.sampleRate;
+
+      // 冲击噪声（极快衰减模拟硬地板撞击）
+      const impLen = Math.floor(sr * 0.045);
+      const buf    = ctx.createBuffer(1, impLen, sr);
+      const d      = buf.getChannelData(0);
+      for (let i = 0; i < impLen; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / impLen, 14);
+      }
+
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+
+      // 带通滤波：突出大理石地板的清脆频段，左右脚略有不同
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = isLeft ? 1900 : 2300;
+      bp.Q.value = 1.4;
+
+      // 高通：去除低频轰鸣
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 700;
+
+      // 短延迟模拟室内硬墙反射（回响）
+      const delay = ctx.createDelay(0.15);
+      delay.delayTime.value = isLeft ? 0.032 : 0.038;
+
+      const echoGain = ctx.createGain();
+      echoGain.gain.value = 0.18;
+
+      const master = ctx.createGain();
+      master.gain.value = 0.52;
+
+      // 直达声路径
+      src.connect(hp); hp.connect(bp); bp.connect(master);
+      // 回响路径
+      bp.connect(delay); delay.connect(echoGain); echoGain.connect(master);
+      master.connect(ctx.destination);
       src.start();
     }
-    let stepTimer = 0;
+
+    let stepTimer  = 0;
+    let isLeftFoot = true;
     function updateFootstep(dt) {
-      if (!isMoving()) { stepTimer = 0; return; }
-      const interval = isShift() ? 1/3 : 1/1.5;
+      if (!isMoving()) { stepTimer = 0; isLeftFoot = true; return; }
+      const interval = isShift() ? 1 / 3 : 1 / 1.5;
       stepTimer += dt;
-      if (stepTimer >= interval) { stepTimer -= interval; playFootstep(); }
+      if (stepTimer >= interval) {
+        stepTimer -= interval;
+        playFootstep(isLeftFoot);
+        isLeftFoot = !isLeftFoot;
+      }
     }
 
     // ── 粒子系统 ──────────────────────────────────────────
@@ -478,7 +612,11 @@
         aimingAtCard = false;
       }
 
+      // 卡牌彩虹时间
+      cardMat.uniforms.uTime.value += dt;
+
       updateParticles(dt, locked);
+      updateSkyCubes(dt);
       renderer.render(scene, camera);
     }
 
