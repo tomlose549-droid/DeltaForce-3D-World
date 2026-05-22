@@ -136,6 +136,22 @@
       z-index: -1;
     }
     #btn-exit { padding: 12px 22px; font-size: 1.1rem; }
+
+    /* ── 子面板 ── */
+    .panel {
+      position: relative;
+      z-index: 1;
+      margin-top: 40px;
+    }
+    .panel-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .panel-row {
+      display: flex;
+      gap: 16px;
+    }
   </style>
 </head>
 <body>
@@ -162,10 +178,33 @@
   <div id="card-ui">
     <div class="rainbow-bg"></div>
     <div class="rainbow-lines"></div>
+
+    <!-- 顶部按钮行 -->
     <div class="ui-buttons">
       <button class="ui-btn" id="btn-exit">✕</button>
       <button class="ui-btn" id="btn-draw">抽卡</button>
       <button class="ui-btn" id="btn-container">容器</button>
+    </div>
+
+    <!-- 抽卡子面板（2列网格）-->
+    <div id="panel-draw" class="panel" style="display:none">
+      <div class="panel-grid">
+        <button class="ui-btn">常规零号大坝</button>
+        <button class="ui-btn">机密巴克十</button>
+        <button class="ui-btn">机密航天基地</button>
+        <button class="ui-btn">绝密巴克十</button>
+        <button class="ui-btn">绝密航天基地</button>
+        <button class="ui-btn">绝密潮汐监狱</button>
+      </div>
+    </div>
+
+    <!-- 容器子面板（横排）-->
+    <div id="panel-container" class="panel" style="display:none">
+      <div class="panel-row">
+        <button class="ui-btn">常规</button>
+        <button class="ui-btn">机密</button>
+        <button class="ui-btn">绝密</button>
+      </div>
     </div>
   </div>
 
@@ -430,14 +469,37 @@
       interactHint.style.display = 'none';
     }
     function closeCardUI() {
+      resetPanels();
       cardUI.style.display = 'none';
       cardUIOpen = false;
       controls.lock();
     }
 
+    const panelDraw      = document.getElementById('panel-draw');
+    const panelContainer = document.getElementById('panel-container');
+    const btnDraw        = document.getElementById('btn-draw');
+    const btnContainer   = document.getElementById('btn-container');
+
+    function resetPanels() {
+      panelDraw.style.display      = 'none';
+      panelContainer.style.display = 'none';
+      btnDraw.style.display        = '';
+      btnContainer.style.display   = '';
+    }
+
     document.getElementById('btn-exit').addEventListener('click', closeCardUI);
-    document.getElementById('btn-draw').addEventListener('click', () => {/* 待开发 */});
-    document.getElementById('btn-container').addEventListener('click', () => {/* 待开发 */});
+
+    btnDraw.addEventListener('click', () => {
+      panelDraw.style.display      = 'block';
+      panelContainer.style.display = 'none';
+      btnDraw.style.display        = 'none';   // 隐藏抽卡，保留容器
+    });
+
+    btnContainer.addEventListener('click', () => {
+      panelContainer.style.display = 'block';
+      panelDraw.style.display      = 'none';
+      btnContainer.style.display   = 'none';   // 隐藏容器，保留抽卡
+    });
 
     // ── 按键 ─────────────────────────────────────────────
     const keys = new Set();
