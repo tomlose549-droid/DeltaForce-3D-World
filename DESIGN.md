@@ -308,7 +308,78 @@
 
 ---
 
-## 七、技术架构
+## 七、建议文件结构
+
+```
+F:\Claude\
+│
+├── index.html                  # 入口文件，仅含 HTML 骨架、importmap、CSS/JS 引用标签
+│
+├── assets/                     # 所有静态资源
+│   ├── textures/               # 贴图文件
+│   │   └── marble.jpg          # 大理石无缝贴图（PBR 材质用）
+│   └── icons/                  # 预留：未来若改用图片图标替代 Canvas 绘制
+│
+├── css/
+│   └── style.css               # 全部样式：准星、进入遮罩、卡牌界面、集装箱面板、按钮动画
+│
+├── data/
+│   └── loot-tables.json        # 6个地点的集装箱数量概率表 + 战利品概率表（纯数据，无逻辑）
+│
+├── js/
+│   ├── main.js                 # 入口：初始化各模块、启动主循环
+│   │
+│   ├── core/                   # 底层渲染基础，不含游戏逻辑
+│   │   ├── scene.js            # 场景、相机、渲染器、雾效、色彩空间配置
+│   │   ├── lights.js           # 环境光、方向光、半球光
+│   │   └── resize.js           # 窗口尺寸变化响应
+│   │
+│   ├── world/                  # 3D 世界内容
+│   │   ├── floor.js            # 无限网格地板
+│   │   ├── walls.js            # 大理石围墙（含碰撞边界常量）
+│   │   ├── sky-cubes.js        # 12个漂浮天空玻璃立方体及其动画
+│   │   └── card-mesh.js        # 北墙卡牌按钮（ShaderMaterial 彩虹霓虹效果）
+│   │
+│   ├── player/                 # 玩家相关
+│   │   ├── controls.js         # PointerLockControls、灵敏度、进入/退出逻辑
+│   │   ├── movement.js         # WASD 移动、Shift 加速、碰撞限制
+│   │   ├── raycaster.js        # 准星射线检测、交互提示显示
+│   │   └── particles.js        # 脚步粒子系统（GLSL Shader、生命周期管理）
+│   │
+│   ├── audio/
+│   │   └── footstep.js         # Web Audio API 脚步音效（左右脚交替、室内回响）
+│   │
+│   └── ui/                     # 2D 卡牌界面
+│       ├── card-ui.js          # 界面开关、顶部按钮逻辑、面板切换
+│       ├── panel-draw.js       # 抽卡面板：6个地点按钮、跳转集装箱面板
+│       ├── panel-container.js  # 容器面板：常规/机密/绝密（功能待开发）
+│       ├── panel-shipping.js   # 集装箱开箱面板：生成箱子、点击抽取、✓ 返回
+│       ├── loot.js             # 读取 loot-tables.json、weightedRandom 算法
+│       └── icons.js            # makeItemIcon、drawItemIcon（18种物品 Canvas 图标缓存）
+│
+├── DESIGN.md                   # 游戏完整设计思路文档（场景、玩法、概率表等）
+└── CHANGELOG.md                # 版本更新日志（V1.0 至今）
+```
+
+### 分组设计思路
+
+| 分组 | 说明 |
+|---|---|
+| `core/` 与 `world/` 分开 | 渲染基础（相机/灯光）与游戏内容（墙壁/天空）职责不同，分开后各自可独立修改 |
+| `player/` 独立成组 | 移动、视角、检测、粒子都属于"玩家行为"，集中管理 |
+| `data/loot-tables.json` | 纯数值与逻辑代码分离，调整概率时只动数据文件，不碰 JS |
+| `ui/` 按面板拆分 | 每个面板一个文件，新增面板时不影响其他面板逻辑 |
+| `assets/icons/` 预留 | 当前图标由 Canvas 代码生成，未来若换成真实图片，目录已就位 |
+
+### 重构建议时机
+
+- 当前（V1.8）：`index.html` 约 1159 行，尚在可管理范围内，建议暂不拆分
+- 建议在 **V2.0 主版本升级** 时统一按此结构重构，作为架构升级的标志性内容
+- 过渡期可先将 `loot-tables.json` 单独抽出，改动最小、收益最直接
+
+---
+
+## 八、技术架构
 
 | 模块 | 技术方案 |
 |---|---|
