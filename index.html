@@ -152,6 +152,94 @@
       display: flex;
       gap: 16px;
     }
+
+    /* ── 集装箱抽取面板 ── */
+    #panel-shipping {
+      position: relative;
+      z-index: 1;
+      margin-top: 36px;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+    .shipping-row {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 720px;
+    }
+    .crate-slot {
+      width: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    /* 灰黑条纹集装箱按钮 */
+    .crate-btn {
+      width: 100px;
+      height: 100px;
+      border-radius: 6px;
+      border: 2px solid #555;
+      cursor: pointer;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          #1c1c1c 0px, #1c1c1c 13px,
+          #2e2e2e 13px, #2e2e2e 26px
+        );
+      position: relative;
+      transition: transform 0.12s, filter 0.12s;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .crate-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent 0px, transparent 18px,
+        rgba(0,0,0,0.35) 18px, rgba(0,0,0,0.35) 20px
+      );
+    }
+    .crate-btn::after {
+      content: '📦';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      opacity: 0.5;
+    }
+    .crate-btn:hover { transform: scale(1.08); filter: brightness(1.4); }
+
+    /* 开箱后显示的物品 */
+    .item-slot {
+      width: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    .item-slot canvas {
+      width: 100px;
+      height: 100px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.18);
+      cursor: pointer;
+      display: block;
+      transition: transform 0.12s;
+    }
+    .item-slot canvas:hover { transform: scale(1.06); }
+    .item-name {
+      color: #ddd;
+      font-size: 0.66rem;
+      text-align: center;
+      line-height: 1.3;
+      max-width: 100px;
+      word-break: break-all;
+    }
   </style>
 </head>
 <body>
@@ -189,12 +277,12 @@
     <!-- 抽卡子面板（2列网格）-->
     <div id="panel-draw" class="panel" style="display:none">
       <div class="panel-grid">
-        <button class="ui-btn">常规零号大坝</button>
-        <button class="ui-btn">机密巴克十</button>
-        <button class="ui-btn">机密航天基地</button>
-        <button class="ui-btn">绝密巴克十</button>
-        <button class="ui-btn">绝密航天基地</button>
-        <button class="ui-btn">绝密潮汐监狱</button>
+        <button class="ui-btn loc-btn" data-loc="常规零号大坝">常规零号大坝</button>
+        <button class="ui-btn loc-btn" data-loc="机密巴克十">机密巴克十</button>
+        <button class="ui-btn loc-btn" data-loc="机密航天基地">机密航天基地</button>
+        <button class="ui-btn loc-btn" data-loc="绝密巴克十">绝密巴克十</button>
+        <button class="ui-btn loc-btn" data-loc="绝密航天基地">绝密航天基地</button>
+        <button class="ui-btn loc-btn" data-loc="绝密潮汐监狱">绝密潮汐监狱</button>
       </div>
     </div>
 
@@ -205,6 +293,12 @@
         <button class="ui-btn">机密</button>
         <button class="ui-btn">绝密</button>
       </div>
+    </div>
+
+    <!-- 集装箱开箱面板 -->
+    <div id="panel-shipping" style="display:none">
+      <div class="shipping-row" id="shipping-row"></div>
+      <button class="ui-btn" id="btn-confirm-ship">✓ 确认收取</button>
     </div>
   </div>
 
@@ -477,12 +571,15 @@
 
     const panelDraw      = document.getElementById('panel-draw');
     const panelContainer = document.getElementById('panel-container');
+    const panelShipping  = document.getElementById('panel-shipping');
+    const shippingRow    = document.getElementById('shipping-row');
     const btnDraw        = document.getElementById('btn-draw');
     const btnContainer   = document.getElementById('btn-container');
 
     function resetPanels() {
       panelDraw.style.display      = 'none';
       panelContainer.style.display = 'none';
+      panelShipping.style.display  = 'none';
       btnDraw.style.display        = '';
       btnContainer.style.display   = '';
     }
@@ -659,6 +756,362 @@
       pGeo.attributes.position.needsUpdate = true;
       pGeo.attributes.alpha.needsUpdate    = true;
     }
+
+    // ── 战利品数据 ────────────────────────────────────────
+    const LOCATION_DATA = {
+      '常规零号大坝': {
+        countTable: [[2,25],[3,15],[4,60]],
+        lootTable: [
+          ['垃圾桶',25],['抽屉柜',14],['手提箱',10],['高级旅行箱',10],
+          ['电脑机箱',8],['武器箱',5],['航空储物箱',3],['快递箱',9],
+          ['医疗物资堆',3],['电脑',1.5],['小保险箱',1.5],['服务器',1.5],
+          ['大保险箱',0.5],['鸟窝',8]
+        ]
+      },
+      '机密巴克十': {
+        countTable: [[3,30],[4,66],[5,4]],
+        lootTable: [
+          ['航空储物箱',2],['鸟窝',8.5],['沙色大保险',0.1],['垃圾桶',20],
+          ['抽屉柜',5],['快递箱',10],['服务器',1.5],['手提箱',15],
+          ['高级旅行箱',15],['医疗物资堆',5],['电脑',2],['电脑机箱',2],
+          ['武器箱',10],['小保险箱',2.3],['大保险箱',0.6]
+        ]
+      },
+      '机密航天基地': {
+        countTable: [[3,40],[4,35],[5,25]],
+        lootTable: [
+          ['垃圾桶',19],['抽屉柜',6],['手提箱',10],['高级旅行箱',10],
+          ['电脑机箱',10],['武器箱',10],['航空储物箱',4],['快递箱',5],
+          ['医疗物资堆',5],['电脑',2],['小保险箱',1],['服务器',2],
+          ['大保险箱',0.7],['鸟窝',9.3],['火箭返回舱',6]
+        ]
+      },
+      '绝密巴克十': {
+        countTable: [[3,32],[4,58],[5,10]],
+        lootTable: [
+          ['航空储物箱',3],['鸟窝',10.5],['沙色大保险',1.2],['垃圾桶',10],
+          ['抽屉柜',7],['快递箱',10],['服务器',1.5],['手提箱',15],
+          ['高级旅行箱',15],['医疗物资堆',6],['电脑',2.5],['电脑机箱',3],
+          ['武器箱',11],['小保险箱',3.5],['大保险箱',1.8]
+        ]
+      },
+      '绝密航天基地': {
+        countTable: [[3,25],[4,30],[5,40],[6,5]],
+        lootTable: [
+          ['垃圾桶',6],['抽屉柜',8],['手提箱',10],['高级旅行箱',10],
+          ['电脑机箱',12],['武器箱',10],['航空储物箱',5],['快递箱',5],
+          ['医疗物资堆',6],['电脑',3],['小保险箱',1.5],['服务器',3],
+          ['大保险箱',1.2],['鸟窝',12.3],['火箭返回舱',7]
+        ]
+      },
+      '绝密潮汐监狱': {
+        countTable: [[4,35],[5,45],[6,20]],
+        lootTable: [
+          ['抽屉柜',10],['手提箱',12],['电脑机箱',10],['武器箱',24.9],
+          ['航空储物箱',8],['快递箱',3],['医疗物资堆',8],['电脑',5],
+          ['小保险箱',4],['服务器',3.5],['大保险箱',3.2],['鸟窝',1],
+          ['三角蚌',16.3],['典狱长的审判',1.1]
+        ]
+      }
+    };
+
+    // 带权重随机选取
+    function weightedRandom(table) {
+      const total = table.reduce((s, [, w]) => s + w, 0);
+      let r = Math.random() * total;
+      for (const [item, w] of table) {
+        r -= w;
+        if (r <= 0) return item;
+      }
+      return table[table.length - 1][0];
+    }
+
+    // ── 物品图标（Canvas 生成 + 缓存）──────────────────────
+    const iconCache = {};
+    function makeItemIcon(name) {
+      if (iconCache[name]) return iconCache[name];
+      const S = 100;
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = S;
+      drawItemIcon(cv.getContext('2d'), name, S);
+      iconCache[name] = cv;
+      return cv;
+    }
+
+    function drawItemIcon(c, name, S) {
+      const fill  = (x,y,w,h,rad=0) => { c.beginPath(); if(rad) c.roundRect(x,y,w,h,rad); else c.rect(x,y,w,h); c.fill(); };
+      const line  = (x1,y1,x2,y2) => { c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke(); };
+      const arc   = (x,y,r,fill_=true) => { c.beginPath(); c.arc(x,y,r,0,Math.PI*2); fill_?c.fill():c.stroke(); };
+      // 背景
+      c.fillStyle = '#181818'; c.fillRect(0,0,S,S);
+
+      switch (name) {
+        case '垃圾桶': {
+          // 灰色圆柱桶
+          c.fillStyle='#5a5a5a'; fill(22,34,56,52,4);           // 桶身
+          c.fillStyle='#3a3a3a'; fill(18,30,64,10,3);            // 桶盖
+          c.fillStyle='#666';    fill(36,22,28,10,3);            // 提手根部
+          c.strokeStyle='#3a3a3a'; c.lineWidth=2;
+          for(let i=0;i<4;i++) line(22,48+i*9,78,48+i*9);       // 横纹
+          c.strokeStyle='#888'; c.lineWidth=1; c.beginPath(); c.roundRect(18,30,64,10,3); c.stroke();
+          break;
+        }
+        case '抽屉柜': {
+          c.fillStyle='#6b4423'; fill(14,18,72,68,4);            // 柜体
+          c.fillStyle='#7d5232';
+          for(let i=0;i<3;i++) fill(18,22+i*22,64,18,2);         // 抽屉面
+          c.strokeStyle='#4a2a10'; c.lineWidth=1;
+          for(let i=0;i<3;i++) { c.beginPath(); c.roundRect(18,22+i*22,64,18,2); c.stroke(); }
+          c.fillStyle='#c8a464';
+          for(let i=0;i<3;i++) arc(50,31+i*22,4);               // 把手
+          break;
+        }
+        case '手提箱': {
+          c.fillStyle='#7a4f2a'; fill(12,32,76,50,6);
+          c.strokeStyle='#4a2a0a'; c.lineWidth=4; c.lineCap='round';
+          c.beginPath(); c.arc(50,32,18,Math.PI,0); c.stroke();  // 提手弧
+          c.fillStyle='#c8a050'; fill(40,50,20,10,2);             // 扣锁
+          c.strokeStyle='#4a2a0a'; c.lineWidth=2; line(12,54,88,54); // 分割线
+          break;
+        }
+        case '高级旅行箱': {
+          c.fillStyle='#1e2d6b'; fill(14,20,72,62,6);
+          c.strokeStyle='#c8a050'; c.lineWidth=2; c.beginPath(); c.roundRect(14,20,72,62,6); c.stroke();
+          line(14,48,86,48);
+          c.strokeStyle='#c8a050'; c.lineWidth=3; c.beginPath(); c.arc(50,20,14,Math.PI,0); c.stroke();
+          c.fillStyle='#444'; arc(26,82,6); arc(74,82,6);         // 轮子
+          break;
+        }
+        case '电脑机箱': {
+          c.fillStyle='#686868'; fill(24,12,52,76,4);
+          c.fillStyle='#888'; fill(28,16,44,8,2);
+          c.fillStyle='#4a4a4a'; fill(30,28,18,3); fill(30,34,18,3);
+          c.fillStyle='#2a9'; arc(66,28,5);  // 电源键
+          c.fillStyle='#4f4'; arc(66,38,3);  // LED
+          c.strokeStyle='#3a3a3a'; c.lineWidth=1;
+          for(let i=0;i<8;i++) line(28,55+i*4,72,55+i*4);
+          break;
+        }
+        case '武器箱': {
+          c.fillStyle='#2d4a1e'; fill(10,20,80,60,4);
+          // 斜条纹
+          c.strokeStyle='rgba(0,0,0,0.45)'; c.lineWidth=7;
+          c.save(); c.beginPath(); c.roundRect(10,20,80,60,4); c.clip();
+          for(let i=-6;i<12;i++) line(i*14,20,i*14+70,80);
+          c.restore();
+          c.strokeStyle='#c8a050'; c.lineWidth=2; c.beginPath(); c.roundRect(10,20,80,60,4); c.stroke();
+          c.fillStyle='#b8922a'; fill(20,46,14,8,2); fill(66,46,14,8,2); // 箱扣
+          break;
+        }
+        case '航空储物箱': {
+          c.fillStyle='#aab4c4'; fill(10,18,80,64,3);
+          // 铆钉
+          c.fillStyle='#8898a8';
+          [[14,22],[84,22],[14,78],[84,78],[14,50],[84,50]].forEach(([rx,ry])=>arc(rx,ry,3));
+          c.fillStyle='#3a6aaa'; fill(10,47,80,8);               // 蓝色条
+          c.strokeStyle='#90a0b8'; c.lineWidth=1; c.beginPath(); c.roundRect(10,18,80,64,3); c.stroke();
+          break;
+        }
+        case '快递箱': {
+          c.fillStyle='#c8922a'; fill(12,22,76,64,3);
+          c.fillStyle='#b8801a'; fill(12,22,36,16,2); fill(52,22,36,16,2); // 箱盖折片
+          c.fillStyle='#d8b860'; fill(40,22,20,64);               // 胶带
+          c.strokeStyle='#a07020'; c.lineWidth=1; line(40,22,40,86); line(60,22,60,86);
+          break;
+        }
+        case '医疗物资堆': {
+          c.fillStyle='#dde'; fill(10,40,52,42,3);               // 底箱
+          c.fillStyle='#eef'; fill(18,22,64,42,3);               // 顶箱
+          c.fillStyle='#dd2020'; fill(38,28,10,30); fill(24,38,38,10); // 红十字
+          break;
+        }
+        case '电脑': {
+          c.fillStyle='#2a2a2a'; fill(12,14,76,50,5);            // 显示器框
+          c.fillStyle='#0a1828'; fill(16,18,68,42,3);             // 屏幕
+          c.fillStyle='#1a3a6a'; fill(16,18,68,20,3);             // 屏幕发光
+          c.fillStyle='#3a3a3a'; fill(40,64,20,8); fill(28,72,44,5,2); // 底座
+          c.fillStyle='#3a3a3a'; fill(18,80,64,12,2);             // 键盘
+          c.fillStyle='#555';
+          for(let kx=0;kx<8;kx++) for(let ky=0;ky<2;ky++) fill(21+kx*7,82+ky*4,5,3,1);
+          break;
+        }
+        case '小保险箱': {
+          c.fillStyle='#2a2a2a'; fill(16,20,68,62,5);
+          c.strokeStyle='#555'; c.lineWidth=1; c.beginPath(); c.roundRect(20,24,60,54,3); c.stroke();
+          c.fillStyle='#555'; arc(50,52,16);
+          c.fillStyle='#333'; arc(50,52,10);
+          c.fillStyle='#888'; arc(50,52,4);
+          c.strokeStyle='#777'; c.lineWidth=3;
+          c.beginPath(); c.arc(74,52,8,-Math.PI*0.6,Math.PI*0.6); c.stroke();
+          break;
+        }
+        case '服务器': {
+          c.fillStyle='#111'; fill(10,10,80,80,4);
+          for(let i=0;i<5;i++){
+            c.fillStyle='#222'; fill(14,14+i*15,72,12,2);
+            c.fillStyle=i%2===0?'#0f0':'#0af'; arc(20,20+i*15,3);
+            c.fillStyle='#0af'; arc(28,20+i*15,3);
+          }
+          break;
+        }
+        case '大保险箱': {
+          c.fillStyle='#1e1e1e'; fill(10,12,80,76,5);
+          c.strokeStyle='#444'; c.lineWidth=2; c.beginPath(); c.roundRect(14,16,72,68,3); c.stroke();
+          c.fillStyle='#444'; arc(50,52,22);
+          c.fillStyle='#2a2a2a'; arc(50,52,14);
+          c.strokeStyle='#666'; c.lineWidth=2;
+          for(let a=0;a<8;a++){
+            const ang=(a/8)*Math.PI*2;
+            line(50+Math.cos(ang)*15,52+Math.sin(ang)*15,50+Math.cos(ang)*20,52+Math.sin(ang)*20);
+          }
+          c.fillStyle='#888'; arc(50,52,5);
+          c.strokeStyle='#666'; c.lineWidth=4; c.beginPath(); c.arc(82,52,10,-Math.PI*0.5,Math.PI*0.5); c.stroke();
+          break;
+        }
+        case '鸟窝': {
+          c.fillStyle='#6b4020';
+          c.beginPath(); c.ellipse(50,64,36,16,0,0,Math.PI*2); c.fill();
+          c.strokeStyle='#8b5a30'; c.lineWidth=2;
+          for(let i=0;i<7;i++){
+            c.beginPath(); c.moveTo(16+i*2,60-i); c.quadraticCurveTo(50,50-i*2,84-i*2,60-i); c.stroke();
+          }
+          c.fillStyle='#e8e4d0';
+          c.beginPath(); c.ellipse(42,60,8,10,-0.3,0,Math.PI*2); c.fill();
+          c.beginPath(); c.ellipse(56,59,8,10,0.3,0,Math.PI*2); c.fill();
+          c.beginPath(); c.ellipse(50,64,7,9,0,0,Math.PI*2); c.fill();
+          break;
+        }
+        case '火箭返回舱': {
+          c.fillStyle='#c0c8d0';
+          c.beginPath(); c.moveTo(35,76); c.lineTo(65,76); c.lineTo(70,50);
+          c.arc(50,30,22,0.3,Math.PI-0.3); c.lineTo(30,50); c.closePath(); c.fill();
+          c.fillStyle='#1a3a6a'; arc(50,38,12);
+          c.strokeStyle='#889'; c.lineWidth=2; arc(50,38,12,false);
+          c.fillStyle='#4a3a20';
+          c.beginPath(); c.moveTo(30,77); c.lineTo(70,77); c.arc(50,77,20,0,Math.PI); c.closePath(); c.fill();
+          break;
+        }
+        case '沙色大保险': {
+          c.fillStyle='#c8a850'; fill(10,12,80,76,5);
+          c.strokeStyle='#a88830'; c.lineWidth=2; c.beginPath(); c.roundRect(14,16,72,68,3); c.stroke();
+          c.fillStyle='#9a7820'; arc(50,52,20);
+          c.fillStyle='#7a5a10'; arc(50,52,12);
+          c.strokeStyle='#d8b840'; c.lineWidth=2;
+          for(let a=0;a<8;a++){
+            const ang=(a/8)*Math.PI*2;
+            line(50+Math.cos(ang)*13,52+Math.sin(ang)*13,50+Math.cos(ang)*18,52+Math.sin(ang)*18);
+          }
+          c.fillStyle='#e8c850'; arc(50,52,4);
+          c.strokeStyle='#a88830'; c.lineWidth=4; c.beginPath(); c.arc(82,52,10,-Math.PI*0.5,Math.PI*0.5); c.stroke();
+          break;
+        }
+        case '三角蚌': {
+          c.fillStyle='#2a1a4a';
+          c.beginPath(); c.moveTo(50,12); c.lineTo(86,82); c.lineTo(14,82); c.closePath(); c.fill();
+          c.fillStyle='#4a2a8a';
+          c.beginPath(); c.moveTo(50,24); c.lineTo(78,76); c.lineTo(22,76); c.closePath(); c.fill();
+          c.strokeStyle='#7a5abb'; c.lineWidth=1;
+          for(let i=1;i<=5;i++){
+            const y=24+i*9, hw=(i/6)*26;
+            line(50-hw,y,50+hw,y);
+          }
+          c.fillStyle='#50ffee'; arc(50,62,8);
+          c.fillStyle='rgba(255,255,255,0.55)'; arc(47,60,4);
+          break;
+        }
+        case '典狱长的审判': {
+          // 链条
+          c.strokeStyle='#c8a020'; c.lineWidth=2;
+          for(let i=0;i<4;i++){ c.beginPath(); c.ellipse(22+i*12,72,5,3,0.4,0,Math.PI*2); c.stroke(); }
+          // 锤柄
+          c.strokeStyle='#7a4a1a'; c.lineWidth=6; c.lineCap='round';
+          line(28,74,76,28);
+          // 锤头
+          c.fillStyle='#c8a020';
+          c.save(); c.translate(66,26); c.rotate(-Math.PI*0.25);
+          fill(-24,-10,48,20,4); c.restore();
+          // 红色印章星
+          c.fillStyle='#e02020';
+          c.beginPath();
+          for(let p=0;p<10;p++){
+            const ang=(p/10)*Math.PI*2-Math.PI/2;
+            const R=p%2===0?14:6;
+            p===0?c.moveTo(24+Math.cos(ang)*R,22+Math.sin(ang)*R)
+                 :c.lineTo(24+Math.cos(ang)*R,22+Math.sin(ang)*R);
+          }
+          c.closePath(); c.fill();
+          break;
+        }
+        default: {
+          c.fillStyle='#3a3a3a'; fill(20,20,60,60,8);
+          c.fillStyle='#888'; c.font='bold 28px Arial'; c.textAlign='center'; c.textBaseline='middle';
+          c.fillText('?',S/2,S/2);
+        }
+      }
+    }
+
+    // ── 集装箱面板逻辑 ──────────────────────────────────────
+    function openShippingPanel(locName) {
+      const data  = LOCATION_DATA[locName];
+      const count = weightedRandom(data.countTable);  // 返回数量
+
+      // 隐藏抽卡面板和顶部两个按钮
+      panelDraw.style.display  = 'none';
+      btnDraw.style.display    = 'none';
+      btnContainer.style.display = 'none';
+
+      // 清空集装箱行
+      shippingRow.innerHTML = '';
+
+      // 生成 N 个集装箱格
+      for (let i = 0; i < count; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'crate-slot';
+
+        const crateBtn = document.createElement('button');
+        crateBtn.className = 'crate-btn';
+
+        crateBtn.addEventListener('click', () => {
+          const itemName = weightedRandom(data.lootTable);
+
+          // 生成图标 canvas
+          const srcIcon = makeItemIcon(itemName);
+          const cv = document.createElement('canvas');
+          cv.width = cv.height = 100;
+          cv.getContext('2d').drawImage(srcIcon, 0, 0);
+
+          const nameEl = document.createElement('div');
+          nameEl.className = 'item-name';
+          nameEl.textContent = itemName;
+
+          const itemSlot = document.createElement('div');
+          itemSlot.className = 'item-slot';
+          itemSlot.appendChild(cv);
+          itemSlot.appendChild(nameEl);
+
+          slot.innerHTML = '';
+          slot.appendChild(itemSlot);
+        });
+
+        slot.appendChild(crateBtn);
+        shippingRow.appendChild(slot);
+      }
+
+      panelShipping.style.display = 'flex';
+    }
+
+    // ✓ 按钮 → 返回抽卡面板
+    document.getElementById('btn-confirm-ship').addEventListener('click', () => {
+      panelShipping.style.display = 'none';
+      panelDraw.style.display     = 'block';
+      btnContainer.style.display  = '';
+      // btnDraw 保持隐藏（已在抽卡子面板内）
+    });
+
+    // 地点按钮点击
+    document.querySelectorAll('.loc-btn').forEach(btn => {
+      btn.addEventListener('click', () => openShippingPanel(btn.dataset.loc));
+    });
 
     // ── 主循环 ────────────────────────────────────────────
     const clock = new THREE.Clock();
