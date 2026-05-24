@@ -8,7 +8,7 @@ export const BOUND = 9.7;
 
 export function initWalls(scene, renderer) {
   const loader     = new THREE.TextureLoader();
-  const baseMarble = loader.load('./marble.jpg');
+  const baseMarble = loader.load('./assets/textures/marble.jpg');
   baseMarble.wrapS      = baseMarble.wrapT = THREE.RepeatWrapping;
   baseMarble.colorSpace = THREE.SRGBColorSpace;
   baseMarble.anisotropy = renderer.capabilities.getMaxAnisotropy();
