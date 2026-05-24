@@ -9,6 +9,7 @@ const panelShipping = document.getElementById('panel-shipping');
 const shippingRow   = document.getElementById('shipping-row');
 const btnConfirm    = document.getElementById('btn-confirm-ship');
 const panelDraw     = document.getElementById('panel-draw');
+const btnDraw       = document.getElementById('btn-draw');
 const btnContainer  = document.getElementById('btn-container');
 
 // ── 初始化：绑定 ✓ 按钮事件 ────────────────────────────────
@@ -45,9 +46,10 @@ export function openShippingPanel(locationName) {
     shippingRow.appendChild(slot);
   }
 
-  // 切换面板显示
+  // 切换面板显示（防御性：显式管理本面板涉及的所有按钮，不依赖外部调用链）
   panelDraw.style.display     = 'none';
   panelShipping.style.display = 'flex';
+  btnDraw.style.display       = 'none'; // 防御性隐藏（正常流程下已隐藏，此处保证自治）
   btnContainer.style.display  = 'none'; // 开箱中暂时隐藏顶部容器按钮
 }
 
