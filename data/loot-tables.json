@@ -1,0 +1,145 @@
+{
+  "常规零号大坝": {
+    "countTable": [
+      { "count": 2, "weight": 25 },
+      { "count": 3, "weight": 15 },
+      { "count": 4, "weight": 60 }
+    ],
+    "lootTable": [
+      { "name": "垃圾桶",     "weight": 25   },
+      { "name": "抽屉柜",     "weight": 14   },
+      { "name": "手提箱",     "weight": 10   },
+      { "name": "高级旅行箱", "weight": 10   },
+      { "name": "快递箱",     "weight": 9    },
+      { "name": "鸟窝",       "weight": 8    },
+      { "name": "电脑机箱",   "weight": 8    },
+      { "name": "武器箱",     "weight": 5    },
+      { "name": "医疗物资堆", "weight": 3    },
+      { "name": "航空储物箱", "weight": 3    },
+      { "name": "电脑",       "weight": 1.5  },
+      { "name": "小保险箱",   "weight": 1.5  },
+      { "name": "服务器",     "weight": 1.5  },
+      { "name": "大保险箱",   "weight": 0.5  }
+    ]
+  },
+  "机密巴克十": {
+    "countTable": [
+      { "count": 3, "weight": 30 },
+      { "count": 4, "weight": 66 },
+      { "count": 5, "weight": 4  }
+    ],
+    "lootTable": [
+      { "name": "垃圾桶",     "weight": 20   },
+      { "name": "手提箱",     "weight": 15   },
+      { "name": "高级旅行箱", "weight": 15   },
+      { "name": "武器箱",     "weight": 10   },
+      { "name": "快递箱",     "weight": 10   },
+      { "name": "鸟窝",       "weight": 8.5  },
+      { "name": "医疗物资堆", "weight": 5    },
+      { "name": "抽屉柜",     "weight": 5    },
+      { "name": "电脑",       "weight": 2    },
+      { "name": "电脑机箱",   "weight": 2    },
+      { "name": "航空储物箱", "weight": 2    },
+      { "name": "小保险箱",   "weight": 2.3  },
+      { "name": "服务器",     "weight": 1.5  },
+      { "name": "大保险箱",   "weight": 0.6  },
+      { "name": "沙色大保险", "weight": 0.1  }
+    ]
+  },
+  "机密航天基地": {
+    "countTable": [
+      { "count": 3, "weight": 40 },
+      { "count": 4, "weight": 35 },
+      { "count": 5, "weight": 25 }
+    ],
+    "lootTable": [
+      { "name": "垃圾桶",     "weight": 19   },
+      { "name": "手提箱",     "weight": 10   },
+      { "name": "高级旅行箱", "weight": 10   },
+      { "name": "电脑机箱",   "weight": 10   },
+      { "name": "武器箱",     "weight": 10   },
+      { "name": "鸟窝",       "weight": 9.3  },
+      { "name": "抽屉柜",     "weight": 6    },
+      { "name": "火箭返回舱", "weight": 6    },
+      { "name": "快递箱",     "weight": 5    },
+      { "name": "医疗物资堆", "weight": 5    },
+      { "name": "航空储物箱", "weight": 4    },
+      { "name": "电脑",       "weight": 2    },
+      { "name": "服务器",     "weight": 2    },
+      { "name": "小保险箱",   "weight": 1    },
+      { "name": "大保险箱",   "weight": 0.7  }
+    ]
+  },
+  "绝密巴克十": {
+    "countTable": [
+      { "count": 3, "weight": 32 },
+      { "count": 4, "weight": 58 },
+      { "count": 5, "weight": 10 }
+    ],
+    "lootTable": [
+      { "name": "手提箱",     "weight": 15   },
+      { "name": "高级旅行箱", "weight": 15   },
+      { "name": "武器箱",     "weight": 11   },
+      { "name": "鸟窝",       "weight": 10.5 },
+      { "name": "快递箱",     "weight": 10   },
+      { "name": "垃圾桶",     "weight": 10   },
+      { "name": "抽屉柜",     "weight": 7    },
+      { "name": "医疗物资堆", "weight": 6    },
+      { "name": "小保险箱",   "weight": 3.5  },
+      { "name": "电脑机箱",   "weight": 3    },
+      { "name": "航空储物箱", "weight": 3    },
+      { "name": "电脑",       "weight": 2.5  },
+      { "name": "大保险箱",   "weight": 1.8  },
+      { "name": "服务器",     "weight": 1.5  },
+      { "name": "沙色大保险", "weight": 1.2  }
+    ]
+  },
+  "绝密航天基地": {
+    "countTable": [
+      { "count": 3, "weight": 25 },
+      { "count": 4, "weight": 30 },
+      { "count": 5, "weight": 40 },
+      { "count": 6, "weight": 5  }
+    ],
+    "lootTable": [
+      { "name": "鸟窝",       "weight": 12.3 },
+      { "name": "电脑机箱",   "weight": 12   },
+      { "name": "手提箱",     "weight": 10   },
+      { "name": "高级旅行箱", "weight": 10   },
+      { "name": "武器箱",     "weight": 10   },
+      { "name": "抽屉柜",     "weight": 8    },
+      { "name": "火箭返回舱", "weight": 7    },
+      { "name": "医疗物资堆", "weight": 6    },
+      { "name": "垃圾桶",     "weight": 6    },
+      { "name": "快递箱",     "weight": 5    },
+      { "name": "航空储物箱", "weight": 5    },
+      { "name": "电脑",       "weight": 3    },
+      { "name": "服务器",     "weight": 3    },
+      { "name": "小保险箱",   "weight": 1.5  },
+      { "name": "大保险箱",   "weight": 1.2  }
+    ]
+  },
+  "绝密潮汐监狱": {
+    "countTable": [
+      { "count": 4, "weight": 35 },
+      { "count": 5, "weight": 45 },
+      { "count": 6, "weight": 20 }
+    ],
+    "lootTable": [
+      { "name": "武器箱",       "weight": 24.9 },
+      { "name": "三角蚌",       "weight": 16.3 },
+      { "name": "手提箱",       "weight": 12   },
+      { "name": "电脑机箱",     "weight": 10   },
+      { "name": "抽屉柜",       "weight": 10   },
+      { "name": "航空储物箱",   "weight": 8    },
+      { "name": "医疗物资堆",   "weight": 8    },
+      { "name": "电脑",         "weight": 5    },
+      { "name": "小保险箱",     "weight": 4    },
+      { "name": "服务器",       "weight": 3.5  },
+      { "name": "大保险箱",     "weight": 3.2  },
+      { "name": "快递箱",       "weight": 3    },
+      { "name": "典狱长的审判", "weight": 1.1  },
+      { "name": "鸟窝",         "weight": 1    }
+    ]
+  }
+}
