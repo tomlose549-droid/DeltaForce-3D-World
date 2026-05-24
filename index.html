@@ -77,339 +77,59 @@
 
   <script type="module">
     import * as THREE from 'three';
-    import { PointerLockControls }              from 'three/addons/controls/PointerLockControls.js';
-    import { loadLootData }                     from './js/ui/loot.js';
-    import { openShippingPanel,
-             initShippingPanel }                from './js/ui/panel-shipping.js';
-    import { updateFootstep }                   from './js/audio/footstep.js';
-    import { initParticles, updateParticles }   from './js/player/particles.js';
+    import { loadLootData }                           from './js/ui/loot.js';
+    import { openShippingPanel, initShippingPanel }   from './js/ui/panel-shipping.js';
+    import { updateFootstep }                         from './js/audio/footstep.js';
+    import { initParticles, updateParticles }         from './js/player/particles.js';
+    import { initScene, initCamera, initRenderer }    from './js/core/scene.js';
+    import { initLights }                             from './js/core/lights.js';
+    import { initResize }                             from './js/core/resize.js';
+    import { initFloor }                              from './js/world/floor.js';
+    import { initWalls, BOUND }                       from './js/world/walls.js';
+    import { initSkyCubes, updateSkyCubes }           from './js/world/sky-cubes.js';
+    import { initCardMesh, getCardMat, getCardMesh }  from './js/world/card-mesh.js';
+    import { initControls }                           from './js/player/controls.js';
+    import { initMovement, isMoving, isShift,
+             updateMovement }                         from './js/player/movement.js';
+    import { initRaycaster, checkCardAim,
+             isAimingAtCard, resetAim }               from './js/player/raycaster.js';
+    import { initCardUI, openCardUI, isCardUIOpen }   from './js/ui/card-ui.js';
 
-    // 预加载战利品数据（ES module 支持顶层 await）
+    // 预加载战利品数据
     await loadLootData();
 
-    // ── 场景基础 ──────────────────────────────────────────
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xdce3e8);
-    scene.fog = new THREE.FogExp2(0xdce3e8, 0.003);
+    // ── 场景初始化 ────────────────────────────────────────
+    const scene    = initScene();
+    const camera   = initCamera();
+    const renderer = initRenderer();
 
-    const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 2000);
-    camera.position.set(0, 1.7, 0);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(devicePixelRatio);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;  // sRGB 输出矫正
-    document.body.appendChild(renderer.domElement);
-
-    // 地板网格
-    scene.add(new THREE.GridHelper(2000, 200, 0x888888, 0x555555));
-
-    // 粒子系统初始化
+    initLights(scene);
+    initFloor(scene);
     initParticles(scene);
+    initWalls(scene, renderer);
+    initSkyCubes(scene);
+    initCardMesh(scene);
 
-    // 灯光
-    scene.add(new THREE.AmbientLight(0xffffff, 1.1));
-    const sun = new THREE.DirectionalLight(0xffffff, 0.55);
-    sun.position.set(5, 12, 8);
-    scene.add(sun);
-    // 半球光：天空漫反射补光，减少暗部过暗
-    const hemi = new THREE.HemisphereLight(0xffffff, 0xe8e8e8, 0.5);
-    scene.add(hemi);
-
-    // ── 大理石贴图（marble.jpg）────────────────────────────
-    const loader = new THREE.TextureLoader();
-    const baseMarble = loader.load('./marble.jpg');
-    baseMarble.wrapS      = baseMarble.wrapT = THREE.RepeatWrapping;
-    baseMarble.colorSpace = THREE.SRGBColorSpace;          // sRGB 色彩空间
-    baseMarble.anisotropy = renderer.capabilities.getMaxAnisotropy(); // 各向异性过滤
-
-    function wallMat(rx, ry) {
-      const tex = baseMarble.clone();
-      tex.wrapS      = tex.wrapT = THREE.RepeatWrapping;
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      tex.repeat.set(rx, ry);
-      tex.needsUpdate = true;
-      return new THREE.MeshStandardMaterial({  // PBR 材质
-        map:       tex,
-        roughness: 0.45,
-        metalness: 0.0,
-      });
-    }
-
-    // ── 围墙（内侧 20×20，高 3，厚 1）────────────────────
-    // 北墙（玩家正前方，z = -10.5），宽 22 含角落
-    const northWall = new THREE.Mesh(new THREE.BoxGeometry(22, 3, 1), wallMat(1.8, 1));
-    northWall.position.set(0, 1.5, -10.5);
-    scene.add(northWall);
-
-    // 南墙
-    const southWall = new THREE.Mesh(new THREE.BoxGeometry(22, 3, 1), wallMat(1.8, 1));
-    southWall.position.set(0, 1.5, 10.5);
-    scene.add(southWall);
-
-    // 东墙（长 20）
-    const eastWall = new THREE.Mesh(new THREE.BoxGeometry(1, 3, 20), wallMat(1.6, 1));
-    eastWall.position.set(10.5, 1.5, 0);
-    scene.add(eastWall);
-
-    // 西墙
-    const westWall = new THREE.Mesh(new THREE.BoxGeometry(1, 3, 20), wallMat(1.6, 1));
-    westWall.position.set(-10.5, 1.5, 0);
-    scene.add(westWall);
-
-    // 碰撞边界（内壁 ±10，减去玩家半径 0.3）
-    const BOUND = 9.7;
-
-    // ── 天空立方体（12 个半透明黑色玻璃方块）────────────
-    const skyCubes = [];
-    const glassMat = new THREE.MeshStandardMaterial({
-      color: 0x050814,
-      transparent: true,
-      opacity: 0.42,
-      roughness: 0.04,
-      metalness: 0.25,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-    });
-    const edgeMat = new THREE.LineBasicMaterial({
-      color: 0x4455cc,
-      transparent: true,
-      opacity: 0.55,
-    });
-
-    for (let i = 0; i < 12; i++) {
-      const size = 20 + Math.random() * 8;           // 20~28 格
-      const geo  = new THREE.BoxGeometry(size, size, size);
-      const cube = new THREE.Mesh(geo, glassMat);
-
-      cube.position.set(
-        (Math.random() - 0.5) * 160,
-        52 + Math.random() * 12,                     // 高度 52~64
-        (Math.random() - 0.5) * 160
-      );
-      cube.rotation.set(
-        Math.random() * Math.PI,
-        Math.random() * Math.PI,
-        Math.random() * Math.PI
-      );
-
-      // 边框线条
-      const edges = new THREE.LineSegments(
-        new THREE.EdgesGeometry(geo), edgeMat
-      );
-      cube.add(edges);
-
-      cube.userData = {
-        vx: (Math.random() - 0.5) * 0.8,
-        vy: (Math.random() - 0.5) * 0.15,
-        vz: (Math.random() - 0.5) * 0.8,
-        rx: (Math.random() - 0.5) * 0.12,
-        ry: (Math.random() - 0.5) * 0.18,
-        rz: (Math.random() - 0.5) * 0.08,
-        baseY: 52 + Math.random() * 12,
-      };
-
-      scene.add(cube);
-      skyCubes.push(cube);
-    }
-
-    function updateSkyCubes(dt) {
-      for (const cube of skyCubes) {
-        const u = cube.userData;
-        cube.position.x += u.vx * dt;
-        cube.position.y += u.vy * dt;
-        cube.position.z += u.vz * dt;
-        cube.rotation.x += u.rx * dt;
-        cube.rotation.y += u.ry * dt;
-        cube.rotation.z += u.rz * dt;
-        // 漂移边界反弹
-        if (Math.abs(cube.position.x) > 120) u.vx *= -1;
-        if (Math.abs(cube.position.z) > 120) u.vz *= -1;
-        if (Math.abs(cube.position.y - u.baseY) > 8) u.vy *= -1;
-      }
-    }
-
-    // ── 卡牌强度图（黑底 + 霓虹辉光遮罩）────────────────
-    function makeCardIntensityMap() {
-      const W = 256, H = 384;
-      const cv = document.createElement('canvas');
-      cv.width = W; cv.height = H;
-      const c = cv.getContext('2d');
-
-      c.fillStyle = 'black';
-      c.fillRect(0, 0, W, H);
-
-      // 外框辉光层（模糊）
-      c.filter = 'blur(10px)';
-      c.strokeStyle = 'rgba(255,255,255,0.7)';
-      c.lineWidth = 28;
-      c.beginPath(); c.roundRect(14, 14, W-28, H-28, 20); c.stroke();
-
-      // "?" 辉光层（模糊）
-      c.filter = 'blur(12px)';
-      c.fillStyle = 'rgba(255,255,255,0.55)';
-      c.font = 'bold 170px serif';
-      c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText('?', W/2, H/2 + 14);
-
-      // 外框清晰层
-      c.filter = 'none';
-      c.strokeStyle = 'white';
-      c.lineWidth = 9;
-      c.beginPath(); c.roundRect(14, 14, W-28, H-28, 20); c.stroke();
-
-      // "?" 清晰层
-      c.fillStyle = 'white';
-      c.font = 'bold 170px serif';
-      c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText('?', W/2, H/2 + 14);
-
-      return new THREE.CanvasTexture(cv);
-    }
-
-    // ── 卡牌网格（霓虹彩虹 Shader）────────────────────────
-    const cardMat = new THREE.ShaderMaterial({
-      uniforms: {
-        uTime:  { value: 0.0 },
-        uMask:  { value: makeCardIntensityMap() },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform float uTime;
-        uniform sampler2D uMask;
-        varying vec2 vUv;
-        vec3 rainbow(float t) {
-          return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.333, 0.667)));
-        }
-        void main() {
-          float intensity = texture2D(uMask, vUv).r;
-          vec3 color = rainbow(uTime * 0.35) * intensity;
-          gl_FragColor = vec4(color, 1.0);
-        }
-      `,
-    });
-
-    const cardMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.75), cardMat);
-    cardMesh.position.set(0, 1.7, -9.97);
-    scene.add(cardMesh);
-
-    // ── 控制器 ────────────────────────────────────────────
-    const controls = new PointerLockControls(camera, document.body);
-    scene.add(controls.getObject());
-
-    const overlay      = document.getElementById('overlay');
-    const enterBtn     = document.getElementById('enter-btn');
-    const sensSlider   = document.getElementById('sensitivity');
-    const sensLabel    = document.getElementById('sens-val');
-    const interactHint = document.getElementById('interact-hint');
-    const cardUI       = document.getElementById('card-ui');
-
-    controls.pointerSpeed = 1.0;
-    sensSlider.addEventListener('input', () => {
-      const v = parseFloat(sensSlider.value);
-      sensLabel.textContent = v.toFixed(1);
-      controls.pointerSpeed = v;
-    });
-
-    let cardUIOpen = false;
-
-    enterBtn.addEventListener('click', () => controls.lock());
-
-    controls.addEventListener('lock', () => {
-      overlay.style.display = 'none';
-    });
-    controls.addEventListener('unlock', () => {
-      // 只有当卡牌界面未打开时才显示主遮罩
-      if (!cardUIOpen) overlay.style.display = 'flex';
-    });
-
-    // ── 卡牌界面开关 ─────────────────────────────────────
-    function openCardUI() {
-      cardUIOpen = true;
-      controls.unlock();
-      cardUI.style.display = 'flex';
-      interactHint.style.display = 'none';
-    }
-    function closeCardUI() {
-      resetPanels();
-      cardUI.style.display = 'none';
-      cardUIOpen = false;
-      controls.lock();
-    }
-
-    const panelDraw      = document.getElementById('panel-draw');
-    const panelContainer = document.getElementById('panel-container');
-    const panelShipping  = document.getElementById('panel-shipping');
-    const shippingRow    = document.getElementById('shipping-row');
-    const btnDraw        = document.getElementById('btn-draw');
-    const btnContainer   = document.getElementById('btn-container');
-
-    function resetPanels() {
-      panelDraw.style.display      = 'none';
-      panelContainer.style.display = 'none';
-      panelShipping.style.display  = 'none';
-      btnDraw.style.display        = '';
-      btnContainer.style.display   = '';
-    }
-
-    document.getElementById('btn-exit').addEventListener('click', closeCardUI);
-
-    btnDraw.addEventListener('click', () => {
-      panelDraw.style.display      = 'block';
-      panelContainer.style.display = 'none';
-      btnDraw.style.display        = 'none';   // 隐藏抽卡，保留容器
-    });
-
-    btnContainer.addEventListener('click', () => {
-      panelContainer.style.display = 'block';
-      panelDraw.style.display      = 'none';
-      btnContainer.style.display   = 'none';   // 隐藏容器，保留抽卡
-    });
-
-    // ── 集装箱面板初始化 ──────────────────────────────────
+    // ── 控制器与界面 ──────────────────────────────────────
+    const controls = initControls(camera, scene, isCardUIOpen);
+    initCardUI(controls);
     initShippingPanel();
 
-    // 地点按钮：点击后打开对应地点的集装箱开箱面板
     document.querySelectorAll('.loc-btn').forEach(btn => {
       btn.addEventListener('click', () => openShippingPanel(btn.dataset.loc));
     });
 
-    // ── 按键 ─────────────────────────────────────────────
-    const keys = new Set();
-    document.addEventListener('keydown', e => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        if (controls.isLocked && aimingAtCard) openCardUI();
-      }
-      keys.add(e.code);
+    // ── 射线检测 ──────────────────────────────────────────
+    const interactHint = document.getElementById('interact-hint');
+    initRaycaster(camera, getCardMesh(), interactHint);
+
+    // ── 按键（空格交互） ──────────────────────────────────
+    initMovement(() => {
+      if (controls.isLocked && isAimingAtCard()) openCardUI();
     });
-    document.addEventListener('keyup', e => keys.delete(e.code));
 
-    const isMoving = () => keys.has('KeyW') || keys.has('KeyS') || keys.has('KeyA') || keys.has('KeyD');
-    const isShift  = () => keys.has('ShiftLeft') || keys.has('ShiftRight');
-
-    // ── 准星射线检测 ──────────────────────────────────────
-    const raycaster = new THREE.Raycaster();
-    let aimingAtCard = false;
-
-    function checkCardAim() {
-      raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-      const hits = raycaster.intersectObject(cardMesh);
-      if (hits.length > 0 && hits[0].distance < 5) {
-        if (!aimingAtCard) interactHint.style.display = 'block';
-        aimingAtCard = true;
-      } else {
-        if (aimingAtCard) interactHint.style.display = 'none';
-        aimingAtCard = false;
-      }
-    }
+    // ── 窗口自适应 ────────────────────────────────────────
+    initResize(camera, renderer);
 
     // ── 主循环 ────────────────────────────────────────────
     const clock = new THREE.Clock();
@@ -420,38 +140,20 @@
       const locked = controls.isLocked;
 
       if (locked) {
-        const dist = (isShift() ? 18 : 6) * dt;
-        if (keys.has('KeyW')) controls.moveForward(dist);
-        if (keys.has('KeyS')) controls.moveForward(-dist);
-        if (keys.has('KeyA')) controls.moveRight(-dist);
-        if (keys.has('KeyD')) controls.moveRight(dist);
-
-        // 碰撞：限制在围墙内
-        camera.position.x = Math.max(-BOUND, Math.min(BOUND, camera.position.x));
-        camera.position.z = Math.max(-BOUND, Math.min(BOUND, camera.position.z));
-
+        updateMovement(dt, controls, camera, BOUND);
         updateFootstep(dt, isMoving, isShift);
         checkCardAim();
       } else {
-        interactHint.style.display = 'none';
-        aimingAtCard = false;
+        resetAim();
       }
 
-      // 卡牌彩虹时间
-      cardMat.uniforms.uTime.value += dt;
-
+      getCardMat().uniforms.uTime.value += dt;
       updateParticles(dt, locked, isMoving, camera);
       updateSkyCubes(dt);
       renderer.render(scene, camera);
     }
 
     animate();
-
-    window.addEventListener('resize', () => {
-      camera.aspect = innerWidth / innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth, innerHeight);
-    });
   </script>
 </body>
 </html>
