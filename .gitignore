@@ -1,0 +1,23 @@
+# ── 系统文件 ──
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# ── 编辑器 ──
+.vscode/
+.idea/
+*.swp
+*~
+
+# ── 本地备份与测试目录 ──
+备份/
+5.21 test/
+*.bak
+*.tmp
+
+# ── 日志 ──
+*.log
+npm-debug.log*
+
+# ── 依赖（如未来引入 npm）──
+node_modules/
