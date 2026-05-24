@@ -53,10 +53,17 @@
     <!-- 容器子面板（横排）-->
     <div id="panel-container" class="panel" style="display:none">
       <div class="panel-row">
-        <button class="ui-btn">常规</button>
-        <button class="ui-btn">机密</button>
-        <button class="ui-btn">绝密</button>
+        <button class="ui-btn cat-btn" data-cat="常规">常规</button>
+        <button class="ui-btn cat-btn" data-cat="机密">机密</button>
+        <button class="ui-btn cat-btn" data-cat="绝密">绝密</button>
       </div>
+    </div>
+
+    <!-- 容器统计展示面板 -->
+    <div id="panel-container-stats" style="display:none">
+      <div class="container-grid" id="container-grid"></div>
+      <div id="container-empty-hint">该分类下暂无容器记录</div>
+      <button class="ui-btn" id="btn-back-container">← 返回</button>
     </div>
 
     <!-- 集装箱开箱面板 -->

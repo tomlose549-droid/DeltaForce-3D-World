@@ -3,6 +3,7 @@
 
 import { getLocationData, weightedRandom } from './loot.js';
 import { makeItemIcon }                    from './icons.js';
+import { recordContainer, extractPrefix }  from './stats.js';
 
 // ── DOM 引用 ───────────────────────────────────────────────
 const panelShipping = document.getElementById('panel-shipping');
@@ -40,7 +41,7 @@ export function openShippingPanel(locationName) {
 
     const btn = document.createElement('button');
     btn.className = 'crate-btn';
-    btn.addEventListener('click', () => openCrate(btn, slot, locData.lootTable));
+    btn.addEventListener('click', () => openCrate(btn, slot, locData.lootTable, locationName));
 
     slot.appendChild(btn);
     shippingRow.appendChild(slot);
@@ -53,14 +54,18 @@ export function openShippingPanel(locationName) {
   btnContainer.style.display  = 'none'; // 开箱中暂时隐藏顶部容器按钮
 }
 
-// ── 点击集装箱：抽取物品并展示 ────────────────────────────
-function openCrate(btn, slot, lootTable) {
+// ── 点击集装箱：抽取容器并展示 ────────────────────────────
+function openCrate(btn, slot, lootTable, locationName) {
   // 防止重复点击
   if (btn.disabled) return;
   btn.disabled = true;
 
-  // 加权随机抽取物品
+  // 加权随机抽取容器
   const itemName = weightedRandom(lootTable);
+
+  // 记录统计（按地图前缀独立计数，揭晓瞬间持久化到 localStorage）
+  const prefix = extractPrefix(locationName);
+  if (prefix) recordContainer(prefix, itemName);
 
   // 从缓存取图标（makeItemIcon 内部有 Map 缓存，不重复绘制）
   const srcCanvas = makeItemIcon(itemName);

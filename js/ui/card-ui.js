@@ -7,11 +7,12 @@ let _cardUIOpen = false;
 const cardUI       = document.getElementById('card-ui');
 const overlay      = document.getElementById('overlay');
 const interactHint = document.getElementById('interact-hint');
-const panelDraw      = document.getElementById('panel-draw');
-const panelContainer = document.getElementById('panel-container');
-const panelShipping  = document.getElementById('panel-shipping');
-const btnDraw        = document.getElementById('btn-draw');
-const btnContainer   = document.getElementById('btn-container');
+const panelDraw           = document.getElementById('panel-draw');
+const panelContainer      = document.getElementById('panel-container');
+const panelContainerStats = document.getElementById('panel-container-stats');
+const panelShipping       = document.getElementById('panel-shipping');
+const btnDraw             = document.getElementById('btn-draw');
+const btnContainer        = document.getElementById('btn-container');
 
 /** 返回卡牌界面当前是否打开（供 controls.js unlock 事件判断） */
 export const isCardUIOpen = () => _cardUIOpen;
@@ -56,9 +57,10 @@ export function closeCardUI() {
 
 /** 重置所有子面板到默认隐藏状态 */
 export function resetPanels() {
-  panelDraw.style.display      = 'none';
-  panelContainer.style.display = 'none';
-  panelShipping.style.display  = 'none';
-  btnDraw.style.display        = '';
-  btnContainer.style.display   = '';
+  panelDraw.style.display           = 'none';
+  panelContainer.style.display      = 'none';
+  panelContainerStats.style.display = 'none';
+  panelShipping.style.display       = 'none';
+  btnDraw.style.display             = '';
+  btnContainer.style.display        = '';
 }

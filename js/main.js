@@ -19,6 +19,7 @@ import { initMovement, isMoving, isShift,
 import { initRaycaster, checkCardAim,
          isAimingAtCard, resetAim }               from './player/raycaster.js';
 import { initCardUI, openCardUI, isCardUIOpen }   from './ui/card-ui.js';
+import { initContainerPanel }                     from './ui/panel-container.js';
 
 // 预加载战利品数据（ES module 支持顶层 await）
 await loadLootData();
@@ -39,6 +40,7 @@ initCardMesh(scene);
 const controls = initControls(camera, scene, isCardUIOpen);
 initCardUI(controls);
 initShippingPanel();
+initContainerPanel();
 
 document.querySelectorAll('.loc-btn').forEach(btn => {
   btn.addEventListener('click', () => openShippingPanel(btn.dataset.loc));
