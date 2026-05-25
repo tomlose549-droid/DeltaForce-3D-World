@@ -63,6 +63,14 @@ const clock = new THREE.Clock();
 
 function animate() {
   requestAnimationFrame(animate);
+
+  // 方案 A：卡牌界面打开时跳过 3D 渲染（玩家看不到 3D 场景，节省 GPU/CPU）
+  // 仍然消费 clock 增量，避免界面关闭时第一帧 dt 暴涨导致天空立方体瞬移
+  if (isCardUIOpen()) {
+    clock.getDelta();
+    return;
+  }
+
   const dt     = clock.getDelta();
   const locked = controls.isLocked;
 

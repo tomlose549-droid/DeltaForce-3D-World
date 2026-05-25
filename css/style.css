@@ -68,39 +68,65 @@ body { overflow: hidden; }
   font-family: Arial, sans-serif;
 }
 
-/* 彩虹渐变背景层 */
+/* 彩虹渐变背景层（方案 B：用 transform 替代 background-position，GPU 加速） */
 .rainbow-bg {
   position: absolute; inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.rainbow-bg::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 200%; height: 100%;          /* 双倍宽度供 transform 平移 */
   background: linear-gradient(135deg,
     rgba(255,0,0,0.18), rgba(255,120,0,0.18),
     rgba(255,230,0,0.18), rgba(0,220,0,0.18),
     rgba(0,100,255,0.18), rgba(160,0,230,0.18),
-    rgba(255,0,0,0.18)
+    rgba(255,0,0,0.18),
+    rgba(255,120,0,0.18), rgba(255,230,0,0.18),
+    rgba(0,220,0,0.18), rgba(0,100,255,0.18),
+    rgba(160,0,230,0.18), rgba(255,0,0,0.18)
   );
-  background-size: 400% 400%;
-  animation: rainbow-shift 8s ease infinite;
-  pointer-events: none;
+  animation: rainbow-pan 8s ease infinite;
+  will-change: transform;
 }
 
-/* 斜线纹路 */
+/* 斜线纹路（方案 B：用 transform 替代 background-position，GPU 加速） */
 .rainbow-lines {
   position: absolute; inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.rainbow-lines::before {
+  content: '';
+  position: absolute;
+  top: -78px; left: -78px;            /* 多出一个周期供平移 */
+  width: calc(100% + 156px);
+  height: calc(100% + 156px);
   background: repeating-linear-gradient(
     45deg, transparent, transparent 38px,
     rgba(255,255,255,0.04) 38px, rgba(255,255,255,0.04) 39px
   );
-  animation: lines-move 6s linear infinite;
-  pointer-events: none;
+  animation: lines-pan 6s linear infinite;
+  will-change: transform;
 }
 
+/* 旧 background-position 动画（仅保留供 .ui-btn::before 使用） */
 @keyframes rainbow-shift {
   0%   { background-position: 0% 50%; }
   50%  { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
-@keyframes lines-move {
-  0%   { background-position: 0 0; }
-  100% { background-position: 78px 78px; }
+/* 新 transform 动画（GPU 加速，全屏元素专用） */
+@keyframes rainbow-pan {
+  0%   { transform: translate3d(0, 0, 0); }
+  50%  { transform: translate3d(-50%, 0, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+@keyframes lines-pan {
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(78px, 78px, 0); }
 }
 
 /* ── 按钮行 ── */
@@ -169,7 +195,7 @@ body { overflow: hidden; }
   max-width: 720px;
   max-height: calc(100vh - 320px); /* 防止集装箱行过高将确认按钮顶出屏幕 */
   overflow-y: auto;
-  padding: 4px 2px;                /* 防止 canvas 边框被 overflow 裁剪 */
+  padding: 4px 12px;               /* 左右 12px 缓冲：防止 :hover 放大时最左/最右按钮被裁剪 */
 }
 .crate-slot {
   width: 100px;
@@ -263,7 +289,7 @@ body { overflow: hidden; }
   max-width: 720px;
   max-height: calc(100vh - 320px);
   overflow-y: auto;
-  padding: 4px 2px;
+  padding: 4px 12px;               /* 左右 12px 缓冲：与 .shipping-row 一致，预留 :hover 放大空间 */
 }
 .container-cell {
   width: 100px;
