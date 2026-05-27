@@ -13,13 +13,17 @@ import { initFloor }                              from './world/floor.js';
 import { initWalls, BOUND }                       from './world/walls.js';
 import { initSkyCubes, updateSkyCubes }           from './world/sky-cubes.js';
 import { initCardMesh, getCardMat, getCardMesh }  from './world/card-mesh.js';
+import { initGiftMesh, getGiftMat, getGiftMesh }  from './world/gift-mesh.js';
 import { initControls }                           from './player/controls.js';
 import { initMovement, isMoving, isShift,
          updateMovement }                         from './player/movement.js';
-import { initRaycaster, checkCardAim,
-         isAimingAtCard, resetAim }               from './player/raycaster.js';
+import { initRaycaster, checkAimTargets,
+         isAimingAtCard, isAimingAtGift,
+         resetAim }                               from './player/raycaster.js';
 import { initCardUI, openCardUI, isCardUIOpen }   from './ui/card-ui.js';
 import { initContainerPanel }                     from './ui/panel-container.js';
+import { initRedeemPanel, openRedeemUI,
+         isRedeemUIOpen }                         from './ui/panel-redeem.js';
 
 // 预加载战利品数据（ES module 支持顶层 await）
 await loadLootData();
@@ -35,10 +39,13 @@ initParticles(scene);
 initWalls(scene, renderer);
 initSkyCubes(scene);
 initCardMesh(scene);
+initGiftMesh(scene);
 
 // ── 控制器与界面 ──────────────────────────────────────
-const controls = initControls(camera, scene, isCardUIOpen);
+// overlay 显示判断：任一 2D 界面打开时都不显示主遮罩
+const controls = initControls(camera, scene, () => isCardUIOpen() || isRedeemUIOpen());
 initCardUI(controls);
+initRedeemPanel(controls);
 initShippingPanel();
 initContainerPanel();
 
@@ -48,11 +55,13 @@ document.querySelectorAll('.loc-btn').forEach(btn => {
 
 // ── 射线检测 ──────────────────────────────────────────
 const interactHint = document.getElementById('interact-hint');
-initRaycaster(camera, getCardMesh(), interactHint);
+initRaycaster(camera, getCardMesh(), getGiftMesh(), interactHint);
 
 // ── 按键（空格交互） ──────────────────────────────────
 initMovement(() => {
-  if (controls.isLocked && isAimingAtCard()) openCardUI();
+  if (!controls.isLocked) return;
+  if (isAimingAtCard())      openCardUI();
+  else if (isAimingAtGift()) openRedeemUI();
 });
 
 // ── 窗口自适应 ────────────────────────────────────────
@@ -64,9 +73,9 @@ const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
 
-  // 方案 A：卡牌界面打开时跳过 3D 渲染（玩家看不到 3D 场景，节省 GPU/CPU）
+  // 方案 A：任一 2D 界面打开时跳过 3D 渲染（玩家看不到 3D 场景，节省 GPU/CPU）
   // 仍然消费 clock 增量，避免界面关闭时第一帧 dt 暴涨导致天空立方体瞬移
-  if (isCardUIOpen()) {
+  if (isCardUIOpen() || isRedeemUIOpen()) {
     clock.getDelta();
     return;
   }
@@ -77,12 +86,13 @@ function animate() {
   if (locked) {
     updateMovement(dt, controls, camera, BOUND);
     updateFootstep(dt, isMoving, isShift);
-    checkCardAim();
+    checkAimTargets();
   } else {
     resetAim();
   }
 
   getCardMat().uniforms.uTime.value += dt;
+  getGiftMat().uniforms.uTime.value += dt;
   updateParticles(dt, locked, isMoving, camera);
   updateSkyCubes(dt);
   renderer.render(scene, camera);

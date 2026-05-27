@@ -9,9 +9,9 @@ let _controls;
  * 初始化控制器
  * @param {THREE.Camera} camera
  * @param {THREE.Scene}  scene
- * @param {function}     isCardUIOpenFn  返回卡牌界面是否打开（避免循环依赖）
+ * @param {function}     isAnyUIOpenFn  返回是否有任意 2D 界面打开（卡牌/兑换等），用于决定 unlock 后是否显示主遮罩
  */
-export function initControls(camera, scene, isCardUIOpenFn) {
+export function initControls(camera, scene, isAnyUIOpenFn) {
   _controls = new PointerLockControls(camera, document.body);
   scene.add(_controls.getObject());
 
@@ -35,9 +35,9 @@ export function initControls(camera, scene, isCardUIOpenFn) {
     overlay.style.display = 'none';
   });
 
-  // 解锁：若卡牌界面未打开则显示遮罩
+  // 解锁：若所有 2D 界面均未打开则显示主遮罩
   _controls.addEventListener('unlock', () => {
-    if (!isCardUIOpenFn()) overlay.style.display = 'flex';
+    if (!isAnyUIOpenFn()) overlay.style.display = 'flex';
   });
 
   return _controls;

@@ -26,6 +26,28 @@
   <!-- 交互提示 -->
   <div id="interact-hint">⬜ 按 [空格] 交互</div>
 
+  <!-- 礼物盒 2D 兑换界面 -->
+  <div id="redeem-ui">
+    <div class="rainbow-bg"></div>
+    <div class="rainbow-lines"></div>
+
+    <!-- 顶部按钮行：仅退出 -->
+    <div class="ui-buttons">
+      <button class="ui-btn" id="redeem-exit">✕</button>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="redeem-panel">
+      <div class="rainbow-input-wrap">
+        <input type="text" id="redeem-input" placeholder="输入兑换码..." maxlength="32" autocomplete="off" spellcheck="false">
+      </div>
+      <button class="ui-btn" id="redeem-confirm">确认</button>
+    </div>
+
+    <!-- 兑换结果提示（底部） -->
+    <div id="redeem-result"></div>
+  </div>
+
   <!-- 卡牌 2D 界面 -->
   <div id="card-ui">
     <div class="rainbow-bg"></div>

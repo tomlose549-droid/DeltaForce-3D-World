@@ -339,3 +339,103 @@ body { overflow: hidden; }
   padding: 20px;
   letter-spacing: 1px;
 }
+
+/* ── 礼物盒兑换 2D 界面 ── */
+#redeem-ui {
+  position: fixed; inset: 0;
+  background: #000;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  padding-top: 70px;
+  z-index: 300; overflow: hidden;
+  font-family: Arial, sans-serif;
+}
+
+.redeem-panel {
+  position: relative;
+  z-index: 1;
+  margin-top: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+/* 彩虹边框输入框包装 */
+.rainbow-input-wrap {
+  position: relative;
+  display: inline-block;
+}
+.rainbow-input-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 10px;
+  background: linear-gradient(135deg,
+    #ff0000, #ff7700, #ffee00,
+    #00ee00, #0077ff, #8b00ff, #ff0000
+  );
+  background-size: 300% 300%;
+  animation: rainbow-shift 3s linear infinite;
+  z-index: -1;
+}
+#redeem-input {
+  width: 320px;
+  padding: 14px 20px;
+  background: rgba(0,0,0,0.92);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  letter-spacing: 1.5px;
+  text-align: center;
+  outline: none;
+  font-family: inherit;
+}
+#redeem-input::placeholder {
+  color: #888;
+  letter-spacing: 1px;
+}
+
+/* 兑换结果提示（底部） */
+#redeem-result {
+  position: absolute;
+  bottom: 60px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  font-size: 1.15rem;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  padding: 12px 28px;
+}
+#redeem-result.show {
+  opacity: 1;
+}
+.redeem-success {
+  color: #4aff7a;
+  text-shadow: 0 0 12px rgba(74,255,122,0.85);
+}
+.redeem-fail {
+  color: #ff6464;
+  text-shadow: 0 0 8px rgba(255,100,100,0.7);
+}
+/* 成功时的绿色光晕扩散动画 */
+.redeem-success::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 80px; height: 80px;
+  margin: -40px 0 0 -40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(74,255,122,0.55) 0%, transparent 70%);
+  animation: green-halo 1.4s ease-out;
+  pointer-events: none;
+  z-index: -1;
+}
+@keyframes green-halo {
+  0%   { transform: scale(0);   opacity: 1; }
+  100% { transform: scale(5);   opacity: 0; }
+}
