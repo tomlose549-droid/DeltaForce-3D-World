@@ -2,6 +2,93 @@
 
 ---
 
+## V2.2 · 2026-05-25
+**礼物盒兑换码功能**
+- 南墙新增礼物盒按钮（坐标 (0, 1.7, +9.97)，与北墙卡牌完全对称）
+- 礼物盒外观：黑底 + 彩虹流动边框 + 礼物盒图形（盒身 + 蝴蝶结）
+- 准星对准礼物盒 5 格内触发"按 [空格] 交互"提示（与卡牌一致）
+- 按空格打开 2D 兑换界面（彩虹背景 + 单行输入框 + 确认按钮）
+- 兑换码 `容器自由` → 「绝密」分类追加 30 个容器：典狱长的审判 ×10、沙色大保险 ×10、大保险箱 ×10
+- 兑换结果提示：成功"✅ 兑换成功！"（绿色 + 光晕扩散动画）/ 失败"❌ 兑换失败：兑换码无效"（红色）
+- 提示 2.5 秒后自动淡出
+- Enter 键等同点击"确认"按钮
+- 失败/成功都清空输入框
+- 无限次兑换，数据写入 localStorage 与现有抽卡统计合并
+- 卡牌界面与兑换界面互斥（一次只能打开一个）
+- 主循环同步支持兑换界面打开时跳过 3D 渲染（沿用 V2.1.1 性能优化）
+
+新增文件：
+- `js/world/gift-mesh.js` — 礼物盒 3D mesh（彩虹 Shader + Canvas 绘制）
+- `js/ui/panel-redeem.js` — 兑换面板业务逻辑
+
+修改文件：
+- `js/player/raycaster.js` — `checkCardAim` → `checkAimTargets`，同时检测卡牌与礼物盒
+- `js/player/controls.js` — 参数 `isCardUIOpenFn` → `isAnyUIOpenFn`（语义泛化）
+- `js/main.js` — 接入 gift mesh + redeem panel，更新主循环判断
+
+---
+
+## V2.1.1 · 2026-05-25
+**性能优化与悬停裁剪修复**
+- 性能方案 A：卡牌/兑换界面打开时跳过 3D 渲染（GPU/CPU 占用大幅下降）
+- 性能方案 B：彩虹背景层和斜线纹路改用 `transform: translate3d()` 替代 `background-position` 动画（GPU 加速）
+- 修复集装箱按钮 `:hover` 放大时，最左/最右按钮被父容器 `overflow` 裁剪的视觉缺陷
+- `.shipping-row` / `.container-grid` 的 `padding` 从 `4px 2px` → `4px 12px`
+
+---
+
+## V2.1 · 2026-05-24
+**容器统计功能**
+- 容器子按钮（V1.7 起的占位）实装功能
+- 按地图前缀（常规 / 机密 / 绝密）独立统计已抽到的容器
+- 数据通过 `localStorage` 持久化（关闭浏览器后保留）
+- 揭晓瞬间立即计入统计
+- 三分类选择页 → 容器网格展示页（每行 6 个）
+- 每个容器显示：图标（与抽卡相同）+ 名称 + 右下角 `×N` 黄色徽章
+- 仅显示已抽取数量 ≥ 1 的容器
+- 同一容器在不同前缀地图分别独立计数
+- 空状态显示「「X」分类下暂无容器记录」
+- 「← 返回」按钮回到三分类选择页
+
+术语统一：
+- DESIGN.md 中"战利品" / "物品"统一改为"容器"
+- 保留"集装箱"特指未开启的灰黑条纹按钮形态
+
+新增文件：
+- `js/ui/stats.js` — 容器统计数据层
+- `js/ui/panel-container.js` — 容器分类面板 UI 层
+- `.gitignore` — 排除本地备份目录
+- `assets/textures/marble.jpg` — 提交到仓库以供 GitHub Pages 部署
+
+---
+
+## V2.0 · 2026-05-24
+**模块化重构（七阶段完成）**
+- index.html 从 1160 行缩减至 80 行（HTML 骨架 + importmap + 单行 script）
+- 全部 CSS 抽取至 `css/style.css`
+- 全部业务代码拆分至 `js/` 模块化结构
+- 概率数据迁移至 `data/loot-tables.json`，与代码逻辑分离
+- 大理石贴图迁至 `assets/textures/marble.jpg`
+
+新增 20 个文件：
+- `js/main.js` — 应用入口
+- `js/core/{scene,lights,resize}.js` — 底层渲染基础
+- `js/world/{floor,walls,sky-cubes,card-mesh}.js` — 3D 世界内容
+- `js/player/{controls,movement,particles,raycaster}.js` — 玩家相关
+- `js/audio/footstep.js` — 脚步音效
+- `js/ui/{card-ui,panel-shipping,loot,icons}.js` — 2D 界面与战利品逻辑
+- `data/loot-tables.json` — 6 地点完整概率表
+
+修复：
+- 集装箱面板"✓ 确认收取"按钮被 `overflow:hidden` 裁剪的问题
+- `panel-shipping.js` 中 `btnDraw` 防御性隐藏，消除隐式依赖
+
+文档：
+- DESIGN.md 新增「七、建议文件结构」章节
+- DESIGN.md 新增「十、版本清单显示规范」章节
+
+---
+
 ## V1.8 · 2026-05-23
 **抽卡子按钮：集装箱开箱系统**
 - 点击地点按钮后进入集装箱面板：根据各地点概率表随机生成 2~6 个灰黑条纹集装箱按钮
