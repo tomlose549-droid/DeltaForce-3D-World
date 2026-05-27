@@ -1,16 +1,9 @@
 // js/ui/panel-redeem.js
-// 礼物盒兑换 2D 界面：输入兑换码 → 验证 → 发放奖励到「绝密」分类
+// 礼物盒兑换 2D 界面：从 JSON 加载兑换码 → 验证 → 发放奖励
 
-import { recordContainer } from './stats.js';
-
-// ── 兑换配置 ───────────────────────────────────────────────
-const VALID_CODE = '容器自由';
-const REWARD_PREFIX = '绝密';
-const REWARDS = [
-  { name: '典狱长的审判', count: 10 },
-  { name: '沙色大保险',   count: 10 },
-  { name: '大保险箱',     count: 10 },
-];
+import { recordContainer }                    from './stats.js';
+import { redeem, isLoadFailed, ResultType }   from './redeem-data.js';
+import { showToast }                          from './toast.js';
 
 // ── DOM 引用 ───────────────────────────────────────────────
 const redeemUI    = document.getElementById('redeem-ui');
@@ -24,6 +17,7 @@ let _controls;
 let _redeemUIOpen = false;
 let _resultTimer = null;
 let _hideTimer = null;
+let _loadFailureNotified = false;   // 加载失败提示只显示一次/会话
 
 /** 兑换界面是否打开（供 raycaster / animate 主循环 / controls 判断） */
 export const isRedeemUIOpen = () => _redeemUIOpen;
@@ -51,9 +45,19 @@ export function openRedeemUI() {
   _controls.unlock();
   redeemUI.style.display = 'flex';
   interactHint.style.display = 'none';
-  // 清空输入框并隐藏旧结果
   inputEl.value = '';
   hideResult(true);
+
+  // 安全网：若 JSON 加载失败，首次打开时提示用户（每会话只提示一次）
+  if (isLoadFailed() && !_loadFailureNotified) {
+    _loadFailureNotified = true;
+    showToast(
+      '⚠ 兑换码服务异常：部分新码可能不可用，"容器自由"仍可正常使用。建议刷新页面重试。',
+      'warn',
+      6000
+    );
+  }
+
   // 自动聚焦输入框（延迟避免被 PointerLock 释放抢占）
   setTimeout(() => inputEl.focus(), 60);
 }
@@ -70,42 +74,57 @@ export function closeRedeemUI() {
 // ── 内部 ───────────────────────────────────────────────────
 
 function tryRedeem() {
-  const code = inputEl.value.trim();
+  const rawInput = inputEl.value;
   inputEl.value = '';   // 成功失败都清空
 
-  if (code === VALID_CODE) {
-    // 发放奖励：3 种容器各 10 个，写入「绝密」分类
-    for (const r of REWARDS) {
-      for (let i = 0; i < r.count; i++) {
-        recordContainer(REWARD_PREFIX, r.name);
+  const result = redeem(rawInput);
+
+  switch (result.type) {
+    case ResultType.SUCCESS:
+      // 发放奖励：按 JSON 中的 rewards 调用 recordContainer
+      for (const r of result.rewards) {
+        for (let i = 0; i < r.count; i++) {
+          recordContainer(r.prefix, r.name);
+        }
       }
-    }
-    showResult(true);
-  } else {
-    showResult(false);
+      showResult('success', '✅ 兑换成功！');
+      break;
+
+    case ResultType.EXPIRED:
+      showResult('fail', '❌ 兑换失败：该兑换码已过期');
+      break;
+
+    case ResultType.USED_UP:
+      showResult('fail', '❌ 兑换失败：该兑换码已用完');
+      break;
+
+    case ResultType.INVALID:
+    default:
+      showResult('fail', '❌ 兑换失败：兑换码无效');
+      break;
   }
 }
 
 /**
  * 显示兑换结果（2.5 秒后淡出）
- * @param {boolean} success
+ * @param {string} kind     'success' | 'fail'
+ * @param {string} text     展示文本
  */
-function showResult(success) {
+function showResult(kind, text) {
   clearTimeout(_resultTimer);
   clearTimeout(_hideTimer);
 
-  resultEl.className = success ? 'redeem-success' : 'redeem-fail';
-  resultEl.textContent = success ? '✅ 兑换成功！' : '❌ 兑换失败：兑换码无效';
+  resultEl.className = kind === 'success' ? 'redeem-success' : 'redeem-fail';
+  resultEl.textContent = text;
   resultEl.style.display = 'block';
   // 触发动画重启（移除并重加 show 类）
   resultEl.classList.remove('show');
-  void resultEl.offsetWidth;  // 强制 reflow
+  void resultEl.offsetWidth;
   resultEl.classList.add('show');
 
   // 2.5 秒后开始淡出
   _resultTimer = setTimeout(() => {
     resultEl.classList.remove('show');
-    // 等淡出动画完成再 display:none
     _hideTimer = setTimeout(() => {
       resultEl.style.display = 'none';
     }, 350);

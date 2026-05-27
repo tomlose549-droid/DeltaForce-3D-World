@@ -1,0 +1,10 @@
+{
+  "容器自由": {
+    "rewards": [
+      { "prefix": "绝密", "name": "典狱长的审判", "count": 10 },
+      { "prefix": "绝密", "name": "沙色大保险",   "count": 10 },
+      { "prefix": "绝密", "name": "大保险箱",     "count": 10 }
+    ],
+    "limit": "unlimited"
+  }
+}

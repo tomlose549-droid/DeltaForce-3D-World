@@ -2,6 +2,41 @@
 
 ---
 
+## V2.3 · 2026-05-28
+**兑换码数据化（含安全网）**
+
+兑换码从硬编码迁移到独立 JSON 配置文件，未来加新码无需改代码。
+
+新增能力：
+- 支持规则类型：
+  - `"limit": "unlimited"` — 无限次（如"容器自由"）
+  - `"limit": "once"` — 一次性码（localStorage 记录已使用）
+  - `"limit": N` — 限 N 次（localStorage 记录使用次数）
+  - `"expireAt": "ISO时间"` — 限时码
+- 每个奖励项可独立指定 prefix（常规/机密/绝密）和 name、count
+- 失败提示按类型区分：兑换码无效 / 已过期 / 已用完
+
+安全网（防御性设计）：
+- JSON 加载失败时（404 / 网络中断 / 解析错误）自动降级到代码内置的 FALLBACK_CODES，
+  保证"容器自由"始终可用
+- 加载失败时玩家首次打开兑换界面会弹出顶部 toast 警告（每会话仅一次）
+- localStorage 写入失败时静默降级（console.warn 但不影响游戏）
+
+新增文件：
+- `data/redeem-codes.json` — 兑换码配置数据
+- `js/ui/redeem-data.js` — 数据层：加载 / 降级 / 验证 / 限次跟踪
+- `js/ui/toast.js` — 全局 toast 提示组件（4 种风格：info/warn/error/success）
+
+修改文件：
+- `js/ui/panel-redeem.js` — 移除硬编码 VALID_CODE/REWARDS，改为调用 redeem()
+- `js/main.js` — 启动时 Promise.all 并行加载 loot + redeem codes
+- `index.html` — 新增 #toast DOM
+- `css/style.css` — 新增 toast 样式（顶部居中弹出，4 种主题色）
+
+玩家可见的差异：无（行为完全一致），仅在加载失败极端情况下会看到 toast 警告
+
+---
+
 ## V2.2 · 2026-05-25
 **礼物盒兑换码功能**
 - 南墙新增礼物盒按钮（坐标 (0, 1.7, +9.97)，与北墙卡牌完全对称）

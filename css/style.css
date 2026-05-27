@@ -439,3 +439,49 @@ body { overflow: hidden; }
   0%   { transform: scale(0);   opacity: 1; }
   100% { transform: scale(5);   opacity: 0; }
 }
+
+/* ── 全局 Toast 提示 ── */
+#toast {
+  position: fixed;
+  top: 40px; left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  z-index: 500;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+  font-size: 0.95rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+  user-select: none;
+  max-width: 480px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.toast-info {
+  background: rgba(40,40,60,0.95);
+  color: #cce0ff;
+  border: 1px solid rgba(120,180,255,0.5);
+}
+.toast-warn {
+  background: rgba(60,40,20,0.95);
+  color: #ffcb80;
+  border: 1px solid rgba(255,180,80,0.6);
+}
+.toast-error {
+  background: rgba(60,20,20,0.95);
+  color: #ff9090;
+  border: 1px solid rgba(255,100,100,0.6);
+}
+.toast-success {
+  background: rgba(20,50,30,0.95);
+  color: #80ffa0;
+  border: 1px solid rgba(80,255,120,0.6);
+}

@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { loadLootData }                           from './ui/loot.js';
+import { loadRedeemCodes }                        from './ui/redeem-data.js';
 import { openShippingPanel, initShippingPanel }   from './ui/panel-shipping.js';
 import { updateFootstep }                         from './audio/footstep.js';
 import { initParticles, updateParticles }         from './player/particles.js';
@@ -25,8 +26,12 @@ import { initContainerPanel }                     from './ui/panel-container.js'
 import { initRedeemPanel, openRedeemUI,
          isRedeemUIOpen }                         from './ui/panel-redeem.js';
 
-// 预加载战利品数据（ES module 支持顶层 await）
-await loadLootData();
+// 预加载战利品数据 + 兑换码数据（ES module 支持顶层 await）
+// 两个 fetch 并行启动以加快启动速度；兑换码加载失败时自动降级为备用配置（不阻塞游戏）
+await Promise.all([
+  loadLootData(),
+  loadRedeemCodes(),
+]);
 
 // ── 场景初始化 ────────────────────────────────────────
 const scene    = initScene();
